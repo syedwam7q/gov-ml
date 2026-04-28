@@ -73,3 +73,7 @@ docs/paper/*.fdb_latexmk
 # --- aegis: local generated -----------------------------------------------
 .aegis-cache/
 .aegis-local/
+
+# --- Playwright artifacts (per-run, never committed) ----------------------
+apps/dashboard/playwright-report/
+apps/dashboard/test-results/
