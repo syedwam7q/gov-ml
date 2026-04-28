@@ -168,4 +168,35 @@ async def transition_decision(
         row.evaluated_at = datetime.now(UTC)
     await session.commit()
     await session.refresh(row)
+
+    # Broadcast over SSE so the dashboard's activity feed updates live.
+    # Failures here are intentionally non-fatal — the transition itself
+    # is durable in Postgres; a missed broadcast just means a slightly
+    # stale UI until the next read picks up the row.
+    import contextlib  # noqa: PLC0415
+    import logging  # noqa: PLC0415
+
+    from aegis_control_plane.routers.stream import StreamEvent, _bus  # noqa: PLC0415
+
+    with contextlib.suppress(Exception):  # broadcast best-effort
+        try:
+            await _bus.broadcast(
+                StreamEvent(
+                    type="state_transition",
+                    data={
+                        "id": str(row.id),
+                        "decision_id": str(row.id),
+                        "model_id": row.model_id,
+                        "from_state": current.value,
+                        "to_state": target.value,
+                        "severity": row.severity,
+                        "kind": "decision_advanced",
+                        "summary": f"{row.model_id} · {current.value} → {target.value}",
+                    },
+                )
+            )
+        except Exception:  # noqa: BLE001
+            logging.getLogger(__name__).debug("SSE broadcast failed; transition still durable")
+            raise
+
     return _row_to_decision(row)

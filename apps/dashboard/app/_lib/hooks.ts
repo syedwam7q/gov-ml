@@ -3,6 +3,7 @@
 import useSWR, { type SWRResponse } from "swr";
 
 import * as api from "./api";
+import { useActivityStream, type StreamConnection } from "./stream";
 import type {
   ActivityEvent,
   AegisModel,
@@ -93,6 +94,33 @@ export function useAudit(
 
 export function useActivity(limit = 20): SWRResponse<readonly ActivityEvent[]> {
   return useSWR(["activity", limit], () => api.listActivity(limit), FAST_POLL);
+}
+
+/**
+ * Live activity feed — SWR pre-fetches the initial page from
+ * `/api/cp/activity`, then `useActivityStream` takes over via SSE.
+ *
+ * Return shape is backward-compatible with `useActivity`: `data` carries
+ * the rolling event window, plus a `connection` field tracking the SSE
+ * lifecycle ("pending" | "live" | "disconnected") for the activity-bell
+ * pulse animation.
+ */
+export interface LiveActivityResult {
+  readonly data: readonly ActivityEvent[];
+  readonly error: unknown;
+  readonly isLoading: boolean;
+  readonly connection: StreamConnection;
+}
+
+export function useLiveActivity(limit = 20): LiveActivityResult {
+  const initial = useSWR(["activity-initial", limit], () => api.listActivity(limit), DEFAULT);
+  const stream = useActivityStream(initial.data ?? [], limit);
+  return {
+    data: stream.events,
+    error: initial.error,
+    isLoading: initial.isLoading,
+    connection: stream.connection,
+  };
 }
 
 export function useDatasets(): SWRResponse<readonly Dataset[]> {
