@@ -13,7 +13,7 @@ from aegis_control_plane.db import get_session
 from aegis_control_plane.orm import ModelRow, ModelVersionRow
 from aegis_shared.schemas import Model, ModelVersion
 
-router = APIRouter(prefix="/api/v1/models", tags=["models"])
+router = APIRouter(prefix="/api/cp/models", tags=["models"])
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 

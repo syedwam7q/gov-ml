@@ -32,6 +32,12 @@ jobs:
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm --filter @aegis/shared-ts generate
+      - name: Fail if generated shared-ts types are stale
+        run: |
+          if ! git diff --exit-code packages/shared-ts/src; then
+            echo "packages/shared-ts/src is out of date. Run 'pnpm --filter @aegis/shared-ts generate' locally and commit." >&2
+            exit 1
+          fi
       - run: pnpm typecheck
       - run: pnpm test
 

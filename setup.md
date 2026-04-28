@@ -234,3 +234,72 @@ Set the dashboard's environment variables in the Vercel project (production scop
 **HF Spaces → toxicity service** (Phase 4 onward) follows.
 
 The full mapping of routes to deployment targets is in `vercel.ts` (typed config; comments in the file).
+
+## Phase 5 — control-plane wiring (live data end-to-end)
+
+After Phase 4 the dashboard renders against seeded fixtures. Phase 5 flips it to live data from the FastAPI control plane. The dashboard always renders — when the control plane is unreachable, it shows a friendly "demo mode" banner and continues to walk through the seeded Apple-Card-2019 hero scenario.
+
+**1. Boot Postgres locally** (any version ≥ 15; use Docker for a clean slate):
+
+    docker run -d --name aegis-pg -p 5432:5432 \
+      -e POSTGRES_PASSWORD=aegis \
+      -e POSTGRES_DB=aegis \
+      postgres:16
+
+    export DATABASE_URL=postgresql+asyncpg://postgres:aegis@127.0.0.1:5432/aegis
+
+**2. Migrate the schema:**
+
+    cd services/control-plane
+    uv run alembic upgrade head
+    cd -
+
+**3. Configure required secrets** (one-time, per dev machine):
+
+    export AUDIT_LOG_HMAC_SECRET=$(openssl rand -hex 64)
+    export INTER_SERVICE_HMAC_SECRET=$(openssl rand -hex 32)
+
+**4. Boot the control plane:**
+
+    uv run --package aegis-control-plane uvicorn aegis_control_plane.app:app --port 8000
+
+The control plane mounts every dashboard-facing route under `/api/cp/*` (single-prefix convention from Phase 5 Task 4). Smoke-test:
+
+    curl -s http://127.0.0.1:8000/api/cp/reachability
+    # → {"ok": true, "version": "0.1.0", "ts": "..."}
+
+**5. Boot the dashboard against the live backend:**
+
+    pnpm --filter @aegis/dashboard dev
+
+Next dev rewrites `/api/cp/*` → `http://127.0.0.1:8000` (see `apps/dashboard/next.config.mjs`). Open `http://localhost:3000/fleet` — the "demo mode" banner should be gone and the activity feed should be live (subscribed to the FastAPI SSE stream at `/api/cp/stream`).
+
+**6. Tinybird (optional — needed only for live KPI rollups):**
+
+The KPI endpoints (`/api/cp/fleet/kpi`, `/api/cp/models/{id}/kpi`) read from three Tinybird pipes defined in `infra/tinybird/pipes/`. To deploy them to your Tinybird workspace:
+
+    cd infra/tinybird
+    tb auth --token "$TINYBIRD_TOKEN"
+    tb push --force
+    cd -
+
+If `TINYBIRD_TOKEN` is unset, the KPI endpoints respond with HTTP 503 and the dashboard's `/fleet` page falls back to fixtures (the banner stays hidden — only the affected pages degrade).
+
+**7. Verify the live loop end-to-end:**
+
+- `/fleet` — three model cards, KPIs from Tinybird, activity feed live via SSE.
+- `/incidents/<id>/` — pick any decision; the page renders the full MAPE-K timeline with audit-chained transitions.
+- `/approvals` — clicking approve / deny on a pending row writes a real state transition; the audit chain extends; SSE broadcasts; activity feed updates without a page refresh.
+- `/audit` — "verify chain" button calls `POST /api/cp/audit/verify` and renders the result inline; "export csv" streams the full chain.
+- `/compliance` — five frameworks (EU AI Act, NIST AI RMF, ECOA, HIPAA, FCRA) with clause-level evidence pointers.
+
+If you can scrub through `/incidents/<id>` and watch all six MAPE-K phases against the live backend, Phase 5 is wired correctly.
+
+**Configuration knobs (Phase 5 additions):**
+
+| Var                                | Default                   | Purpose                                                                         |
+| ---------------------------------- | ------------------------- | ------------------------------------------------------------------------------- |
+| `TINYBIRD_TOKEN`                   | (empty)                   | Read token for `/api/cp/fleet/kpi` and `/api/cp/models/{id}/kpi`. 503 if unset. |
+| `TINYBIRD_HOST`                    | `https://api.tinybird.co` | Override for EU region or self-hosted gateways                                  |
+| `AEGIS_CONTROL_PLANE_DEV_URL`      | `http://127.0.0.1:8000`   | Where the Next dev rewrite proxies `/api/cp/*` (Phase 5 Task 5)                 |
+| `AEGIS_CONTROL_PLANE_INTERNAL_URL` | (empty)                   | Server-side reachability probe target (production: same-origin via vercel.ts)   |

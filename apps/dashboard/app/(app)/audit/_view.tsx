@@ -66,14 +66,12 @@ function Toolbar({ total, start, end }: ToolbarProps): ReactNode {
       .then((result) => {
         setVerification(result);
       })
-      .catch((err: unknown) => {
-        const message = err instanceof Error ? err.message : "verification failed";
+      .catch(() => {
         setVerification({
-          verified: false,
-          inspected: 0,
+          valid: false,
+          rows_checked: 0,
+          head_row_hash: null,
           first_failed_sequence: -1,
-          // Borrow the message slot — UI surfaces it in the danger banner.
-          ...(message ? {} : {}),
         });
       })
       .finally(() => {
@@ -81,8 +79,8 @@ function Toolbar({ total, start, end }: ToolbarProps): ReactNode {
       });
   };
 
-  const csvHref =
-    "data:text/csv;charset=utf-8," + encodeURIComponent("# CSV export wires in Phase 5\n");
+  // Streaming RFC-4180 export from the control plane (Phase 5 Task 17).
+  const csvHref = "/api/cp/audit/export.csv";
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -116,11 +114,11 @@ function Toolbar({ total, start, end }: ToolbarProps): ReactNode {
         <span
           role="status"
           className={`aegis-mono text-aegis-xs uppercase tracking-aegis-mono ${
-            verification.verified ? "text-status-ok" : "text-sev-high"
+            verification.valid ? "text-status-ok" : "text-sev-high"
           }`}
         >
-          {verification.verified
-            ? `chain verified · ${verification.inspected} rows`
+          {verification.valid
+            ? `chain verified · ${verification.rows_checked} rows`
             : `chain broken · row ${verification.first_failed_sequence ?? "?"}`}
         </span>
       ) : null}

@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     emergency_stop: bool = Field(default=False, alias="EMERGENCY_STOP")
     """Global kill-switch. Admin-only via the dashboard."""
 
+    tinybird_token: str = Field(default="", alias="TINYBIRD_TOKEN")
+    """Bearer token for Tinybird Build plan — read-only `.json` pipe endpoints."""
+
+    tinybird_host: str = Field(default="https://api.tinybird.co", alias="TINYBIRD_HOST")
+    """Tinybird API host. Defaults to public endpoint; override for EU region."""
+
     @property
     def database_url_sync(self) -> str:
         """Sync variant for Alembic offline mode."""

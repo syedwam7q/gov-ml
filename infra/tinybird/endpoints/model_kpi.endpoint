@@ -1,0 +1,9 @@
+DESCRIPTION >
+    Public REST endpoint serving the per-model KPI rollup. Read by the
+    control plane at GET /api/cp/models/{model_id}/kpi.
+
+TOKEN read_dashboard READ
+
+NODE endpoint
+SQL >
+    SELECT * FROM model_kpi

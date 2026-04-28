@@ -19,7 +19,7 @@ from aegis_control_plane.db import get_session
 from aegis_control_plane.orm import AuditLogRow
 from aegis_shared.audit import AuditRow, verify_chain
 
-router = APIRouter(prefix="/api/v1/audit", tags=["audit"])
+router = APIRouter(prefix="/api/cp/audit", tags=["audit"])
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 

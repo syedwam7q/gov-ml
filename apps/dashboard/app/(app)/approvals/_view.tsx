@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useSWRConfig } from "swr";
 
 import { ApprovalCard, ApprovalsIcon, EmptyState, KPITile, useRole } from "@aegis/ui";
 
+import { transitionDecision } from "../../_lib/api";
 import { relativeTime } from "../../_lib/format";
 import type { AegisModel, GovernanceDecision } from "../../_lib/types";
 
@@ -142,6 +144,7 @@ interface ApprovalQueueItemProps {
 
 function ApprovalQueueItem({ decision, models, canDecide }: ApprovalQueueItemProps): ReactNode {
   const approval = decision.approval;
+  const { mutate } = useSWRConfig();
   if (!approval || !decision.plan) return null;
 
   const recommended = decision.plan.find((a) => a.selected) ?? decision.plan[0];
@@ -154,6 +157,36 @@ function ApprovalQueueItem({ decision, models, canDecide }: ApprovalQueueItemPro
   const context = topCause
     ? `${decision.drift_signal.metric} = ${decision.drift_signal.value} (baseline ${decision.drift_signal.baseline}). Top cause · ${topCause.node} (${(topCause.contribution * 100).toFixed(0)}%).`
     : `${decision.drift_signal.metric} = ${decision.drift_signal.value} (baseline ${decision.drift_signal.baseline}).`;
+
+  // Revalidate every list affected by an approval transition.
+  const invalidate = (): void => {
+    void mutate(
+      (key) =>
+        Array.isArray(key) &&
+        (key[0] === "decisions" || key[0] === "audit" || key[0] === "activity"),
+    );
+  };
+
+  const onApprove = async (justification: string, actionKey: string): Promise<void> => {
+    await transitionDecision(decision.id, {
+      target_state: "executing",
+      payload: {
+        approval: { decision: "approved", justification },
+        chosen_action_key: actionKey,
+      },
+    });
+    invalidate();
+  };
+
+  const onDeny = async (justification: string): Promise<void> => {
+    await transitionDecision(decision.id, {
+      target_state: "evaluated",
+      payload: {
+        approval: { decision: "denied", justification },
+      },
+    });
+    invalidate();
+  };
 
   return (
     <ApprovalCard
@@ -177,11 +210,11 @@ function ApprovalQueueItem({ decision, models, canDecide }: ApprovalQueueItemPro
         selected: a.selected,
       }))}
       canDecide={canDecide}
-      onApprove={() => {
-        // Backend wires the actual approval write in Phase 5.
+      onApprove={(j, k) => {
+        void onApprove(j, k);
       }}
-      onDeny={() => {
-        // Backend wires the actual deny write in Phase 5.
+      onDeny={(j) => {
+        void onDeny(j);
       }}
       renderOpenLink={({ className, children }) => (
         <Link href={`/incidents/${decision.id}`} className={className} prefetch={false}>

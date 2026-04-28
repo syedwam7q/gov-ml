@@ -1,0 +1,10 @@
+DESCRIPTION >
+    Public REST endpoint serving the per-model sparkline points (one
+    row per (model_id, kind, t)). Read by the control plane to fill
+    `ModelKPI.sparkline` for both fleet and per-model KPI endpoints.
+
+TOKEN read_dashboard READ
+
+NODE endpoint
+SQL >
+    SELECT * FROM kpi_sparkline
