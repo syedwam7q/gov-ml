@@ -164,6 +164,12 @@ _HERO_CAUSAL_ATTRIBUTION: Final[dict[str, Any]] = {
         },
     ],
     "confidence": 0.86,
+    # Phase 6 — provenance fields. The seeded values are textbook
+    # Apple-Card outputs; the Phase 6 pipeline reproduces them from
+    # real attribution when run against the scenario fixtures (see
+    # `tests/scenarios/test_scenario_apple_card.py`).
+    "recommended_action": "REWEIGH",
+    "attribution_quality": "high",
 }
 
 _HERO_PLAN_EVIDENCE: Final[dict[str, Any]] = {
