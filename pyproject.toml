@@ -13,6 +13,7 @@ members = [
   "ml-pipelines/_shared",
   "services/control-plane",
   "services/detect-tabular",
+  "services/detect-text",
 ]
 
 [tool.uv]
@@ -68,6 +69,7 @@ include = [
   "ml-pipelines/_shared/src",
   "services/control-plane/src",
   "services/detect-tabular/src",
+  "services/detect-text/src",
 ]
 exclude = ["**/.venv", "**/__pycache__", "**/node_modules"]
 
@@ -97,6 +99,18 @@ reportUnknownParameterType = "none"
 reportUnknownLambdaType = "none"
 reportMissingTypeArgument = "none"
 
+# detect-text uses sentence-transformers + numpy which also lack strict
+# stubs. Same loose-typing rule.
+[[tool.pyright.executionEnvironments]]
+root = "services/detect-text"
+reportMissingTypeStubs = "none"
+reportUnknownVariableType = "none"
+reportUnknownMemberType = "none"
+reportUnknownArgumentType = "none"
+reportUnknownParameterType = "none"
+reportUnknownLambdaType = "none"
+reportMissingTypeArgument = "none"
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = [
@@ -107,6 +121,7 @@ testpaths = [
   "ml-pipelines/toxicity/tests",
   "services/control-plane/tests",
   "services/detect-tabular/tests",
+  "services/detect-text/tests",
   "tests",
 ]
 addopts = "-ra --strict-markers --strict-config --import-mode=importlib"
