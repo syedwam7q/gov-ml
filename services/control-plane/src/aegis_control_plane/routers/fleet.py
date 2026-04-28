@@ -17,6 +17,7 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Annotated, Any, Literal
 
+import httpx
 from fastapi import APIRouter, HTTPException, Query, status
 
 from aegis_control_plane.config import get_settings
@@ -87,8 +88,21 @@ def tinybird_client_or_503() -> TinybirdClient:
 
 @router.get("/kpi")
 async def list_fleet_kpi(window: Annotated[Window, Query()] = "24h") -> list[dict[str, Any]]:
-    """One `ModelKPI` per registered model over the requested window."""
-    async with tinybird_client_or_503() as tb:
-        rollup = await tb.query_endpoint("fleet_kpi", params={"window": window})
-        sparkline = await tb.query_endpoint("kpi_sparkline", params={"window": window})
+    """One `ModelKPI` per registered model over the requested window.
+
+    Returns 503 with a clear `Retry-After` hint when Tinybird is
+    unreachable, the token is wrong-region, or the workspace pipes
+    aren't seeded. The dashboard has a `mode=fallback` path that
+    triggers on 5xx, so a clean 503 keeps the UI responsive instead
+    of crashing into 500 Internal Server Error.
+    """
+    try:
+        async with tinybird_client_or_503() as tb:
+            rollup = await tb.query_endpoint("fleet_kpi", params={"window": window})
+            sparkline = await tb.query_endpoint("kpi_sparkline", params={"window": window})
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Tinybird query failed: {exc.__class__.__name__}: {exc}",
+        ) from exc
     return build_response_payload(rollup, sparkline, window)

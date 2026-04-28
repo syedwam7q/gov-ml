@@ -203,14 +203,15 @@ async def test_loop_surfaces_tool_errors_to_model(
 
 
 @pytest.mark.asyncio
-async def test_loop_switches_to_quality_model_after_first_tool_call(
+async def test_loop_uses_quality_model_for_every_turn(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The 8B fast model handles 'should I call a tool?' fine but
-    sometimes emits malformed `<function=...>` blocks when synthesizing
-    a tool result, which Groq rejects with 400 tool_use_failed.
-    Regression guard: once any tool has fired, every remaining iteration
-    must use the quality model (`phase='final'`)."""
+    """Llama 3.1 8B Instant emits malformed `<function=...>` blocks
+    even on the FIRST turn (the 'should I call a tool?' decision),
+    not just on tool-result synthesis — Groq rejects with 400
+    tool_use_failed and the chat hangs on the user's first question.
+    Regression guard: every turn must use the 70B quality model
+    (phase='final')."""
     phases: list[str] = []
     monkeypatch.setattr(
         groq_client,
@@ -245,5 +246,8 @@ async def test_loop_switches_to_quality_model_after_first_tool_call(
         ):
             pass
     assert len(phases) == 2
-    assert phases[0] == "tool_decision", "first turn should use the fast model"
-    assert phases[1] == "final", "after a tool fires, synthesis must route to the quality model"
+    assert phases[0] == "final", (
+        "first turn (tool-routing decision) must use the 70B model — "
+        "8B emits malformed function-call XML"
+    )
+    assert phases[1] == "final", "synthesis turn after tool result must use the 70B model"

@@ -14,12 +14,42 @@ from sqlalchemy.ext.asyncio import (
 from aegis_control_plane.config import get_settings
 
 
+def _normalise_async_postgres_url(url: str) -> str:
+    """SQLAlchemy needs `postgresql+asyncpg://...` for async. Operators
+    typically paste a plain `postgresql://...` from their cloud provider
+    (Neon, Supabase, RDS), which defaults to the psycopg2 sync driver
+    and crashes with `ModuleNotFoundError: psycopg2` since we only
+    install asyncpg. Rewrite the scheme automatically so the .env stays
+    operator-friendly.
+
+    Also strips Postgres connection params that asyncpg doesn't accept
+    on the URL (`channel_binding`, `sslmode` — asyncpg uses `ssl='require'`
+    via connect args, not a query param). We keep `sslmode=require`
+    behavior implicitly since most managed Postgres providers force TLS
+    at the network layer anyway.
+    """
+    target = url
+    if target.startswith("postgresql://"):
+        target = "postgresql+asyncpg://" + target[len("postgresql://") :]
+    elif target.startswith("postgres://"):
+        target = "postgresql+asyncpg://" + target[len("postgres://") :]
+    # asyncpg rejects `channel_binding` / `sslmode` query params.
+    for bad_param in ("channel_binding=require", "channel_binding=disable", "sslmode=require"):
+        target = (
+            target.replace("?" + bad_param + "&", "?")
+            .replace("&" + bad_param, "")
+            .replace("?" + bad_param, "")
+        )
+    return target
+
+
 def make_engine(url: str | None = None) -> AsyncEngine:
     """Construct a fresh async engine. Used in production and in tests."""
     target_url = url or get_settings().database_url
     if not target_url:
         msg = "DATABASE_URL is not configured"
         raise RuntimeError(msg)
+    target_url = _normalise_async_postgres_url(target_url)
     return create_async_engine(target_url, pool_pre_ping=True, future=True)
 
 

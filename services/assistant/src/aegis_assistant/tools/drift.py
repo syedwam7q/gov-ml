@@ -42,18 +42,29 @@ async def explain_drift_signal(client: httpx.AsyncClient, args: dict[str, Any]) 
         )
     decision = decisions[0]
     attribution = cast("dict[str, Any] | None", decision.get("causal_attribution"))
+    decision_id = decision.get("id", "?")
     if not attribution:
         return ToolResult(
-            summary=(f"decision {decision.get('id', '?')} has no causal attribution yet"),
-            payload=None,
+            summary=(
+                f"most recent decision for {model_id} is {decision_id} "
+                f"(state={decision.get('state', '?')}); no causal attribution yet"
+            ),
+            payload={"decision_id": decision_id, "decision": decision},
         )
     root_causes = cast("list[dict[str, Any]]", attribution.get("root_causes") or [])
     top = root_causes[0] if root_causes else {}
     contribution = top.get("contribution", 0)
     contribution_pct = contribution * 100 if isinstance(contribution, (int, float)) else 0
+    # Surface the decision_id explicitly so the model can chain into
+    # get_audit_chain / get_pareto_front / get_decision without
+    # fabricating a placeholder id.
     summary = (
-        f"{model_id} {attribution.get('method', '?')}: top cause "
+        f"decision {decision_id} on {model_id} · "
+        f"{attribution.get('method', '?')}: top cause "
         f"{top.get('node', '?')} ({contribution_pct:.0f}%); "
-        f"recommended action = {attribution.get('recommended_action', '?')}"
+        f"recommended_action={attribution.get('recommended_action', '?')}"
     )
-    return ToolResult(summary=summary, payload=attribution)
+    return ToolResult(
+        summary=summary,
+        payload={"decision_id": decision_id, "attribution": attribution},
+    )

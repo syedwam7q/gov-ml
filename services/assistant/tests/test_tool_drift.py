@@ -36,7 +36,14 @@ async def test_explain_drift_signal_returns_top_cause_and_action() -> None:
     assert "loan_amount" in result.summary
     assert "42%" in result.summary
     assert "REWEIGH" in result.summary
-    assert result.payload == decisions[0]["causal_attribution"]
+    # Payload now wraps both the resolved decision_id and the raw
+    # attribution so the model can chain into get_audit_chain etc.
+    # without fabricating a placeholder id.
+    assert result.payload["decision_id"] == "dec-1"
+    assert result.payload["attribution"] == decisions[0]["causal_attribution"]
+    # Summary should also call out the decision_id so the model sees it
+    # immediately on the tool_call_end frame.
+    assert "dec-1" in result.summary
 
 
 @pytest.mark.asyncio

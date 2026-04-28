@@ -78,27 +78,21 @@ async def run_chat_loop(
     }
     convo: list[dict[str, Any]] = [system_msg, *messages]
 
-    # Once any tool has fired we switch to the quality model for the
-    # rest of the loop. Llama 3.1 8B Instant (the fast tool-decision
-    # model) is reliable for "do I need a tool?" but its synthesis
-    # after a tool result is fragile — it sometimes emits malformed
-    # `<function=...>` blocks instead of normal text, which Groq
-    # rejects with 400 tool_use_failed. Llama 3.3 70B Versatile
-    # synthesizes tool results into clean prose.
-    has_called_a_tool = False
+    # Model selection: every turn uses the quality model (70B). The
+    # original two-model rotation aimed to save tokens by routing
+    # tool-decision turns to Llama 3.1 8B Instant, but in practice
+    # 8B emits malformed `<function=...>` XML blocks instead of valid
+    # OpenAI-shaped tool calls — Groq rejects those with 400
+    # tool_use_failed and the chat surfaces an error. Llama 3.3 70B
+    # Versatile is reliable for both tool routing and synthesis, and
+    # the cost difference per chat is negligible at the dev tier we
+    # run on. The `phase` parameter is preserved (the wrapper still
+    # honours it) so a future caller could opt back into rotation
+    # without touching this loop.
 
     async with httpx.AsyncClient() as http:
-        for iteration in range(settings.chat_max_iterations):
-            phase: Literal["tool_decision", "final"]
-            if has_called_a_tool:
-                # Synthesis after tool calls always uses the quality model.
-                phase = "final"
-            elif iteration < settings.chat_max_iterations - 1:
-                # First turn (and any pre-tool turns) use the cheap fast
-                # model to decide whether a tool is needed.
-                phase = "tool_decision"
-            else:
-                phase = "final"
+        for _iteration in range(settings.chat_max_iterations):
+            phase: Literal["tool_decision", "final"] = "final"
             try:
                 resp = await groq_client.chat_completion(
                     messages=convo, tools=TOOL_SPECS, phase=phase
@@ -123,11 +117,6 @@ async def run_chat_loop(
             if not tool_calls:
                 yield StreamFrame(kind="final_text", text=message.content or "")
                 return
-
-            # Once any tool has fired, all subsequent turns use the
-            # quality model — flag flips here so the *next* iteration
-            # of this loop reads it.
-            has_called_a_tool = True
 
             # Append the assistant's tool-call request to the convo so
             # subsequent turns can see what tools were already requested.
