@@ -48,6 +48,9 @@ export const config: VercelConfig = {
     // Phase 6 — causal-attrib worker under /api/causal/*. Read by the
     // control plane (server-side) at CAUSAL_ATTRIB_URL.
     { source: "/api/causal/:path*", destination: "/services/causal-attrib/api/:path*" },
+    // Phase 7 — action-selector worker under /api/select/*. Read by the
+    // control plane (server-side) at ACTION_SELECTOR_URL.
+    { source: "/api/select/:path*", destination: "/services/action-selector/api/:path*" },
   ],
   redirects: [],
   headers: [

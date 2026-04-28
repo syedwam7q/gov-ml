@@ -357,3 +357,44 @@ has the data it needs.
 | `ATTRIB_TIMEOUT_S`  | `30.0`                  | Hard timeout per DoWhy GCM call (spec §12.1)                                   |
 | `DBSHAP_SAMPLES`    | `2048`                  | Monte-Carlo permutation budget for the DBShap fallback                         |
 | `CAUSAL_CACHE_SIZE` | `64`                    | In-process cache size keyed by (model_id, target, ref_fp, cur_fp, num_samples) |
+
+## Phase 7 — Pareto-optimal action selection (research extension 2)
+
+After Phase 6 the analyze-state transition produces real
+`causal_attribution`. Phase 7 makes the plan-state transition produce
+real `plan_evidence` — the Pareto front + chosen action that the
+dashboard's `/incidents/<id>` page renders. The **second paper-earning
+research contribution** per spec §12.2.
+
+**1. Boot the action-selector worker:**
+
+    uv sync --all-packages
+    uv run --package aegis-action-selector uvicorn aegis_action_selector.app:app --port 8004
+
+Smoke-test:
+
+    curl http://127.0.0.1:8004/healthz
+    # → {"ok": true, "service": "action-selector", "version": "0.1.0"}
+
+**2. Run the regret-bound test (gold-quality verification of the paper claim):**
+
+    uv run pytest services/action-selector/tests/test_regret_bounded.py -v
+
+Asserts cumulative regret R(T) ≤ C · √(T·log T) · k for T ∈ {50, 100, 200}
+plus a Hypothesis property test across 4 random seeds. Load-bearing
+paper claim from Slivkins-Sankararaman-Foster (JMLR 2024) Theorem 3.1.
+
+**3. Wire the control plane** (one-time per dev machine):
+
+    export ACTION_SELECTOR_URL=http://127.0.0.1:8004
+
+The control plane's plan-state transition will then call `POST /select`
+whenever a `GovernanceDecision` advances from `analyzed` to `planned`
+_and_ the caller didn't supply an explicit payload. The Phase 6
+`recommended_action` is forwarded as the bandit's Bayesian prior.
+
+**Configuration knobs (Phase 7 additions):**
+
+| Var                   | Default                 | Purpose                                                  |
+| --------------------- | ----------------------- | -------------------------------------------------------- |
+| `ACTION_SELECTOR_URL` | `http://localhost:8004` | Where the control plane reaches services/action-selector |
