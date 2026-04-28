@@ -1,0 +1,30 @@
+{
+  "name": "credit-v1-dag",
+  "nodes": [
+    "applicant_race",
+    "applicant_ethnicity",
+    "applicant_sex",
+    "applicant_age",
+    "co_applicant_present",
+    "income",
+    "loan_amount",
+    "debt_to_income",
+    "approval"
+  ],
+  "edges": [
+    ["applicant_race", "income"],
+    ["applicant_ethnicity", "income"],
+    ["applicant_sex", "income"],
+    ["applicant_age", "income"],
+    ["applicant_sex", "co_applicant_present"],
+    ["applicant_age", "co_applicant_present"],
+    ["co_applicant_present", "income"],
+    ["income", "loan_amount"],
+    ["income", "debt_to_income"],
+    ["loan_amount", "debt_to_income"],
+    ["debt_to_income", "approval"],
+    ["loan_amount", "approval"],
+    ["income", "approval"]
+  ],
+  "notes": "Hand-curated from HMDA-LAR codebooks and the credit decisioning literature. Used by services/causal-attrib (Phase 5) for DoWhy GCM attribution."
+}
