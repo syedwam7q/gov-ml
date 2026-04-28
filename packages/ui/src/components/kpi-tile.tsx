@@ -7,8 +7,12 @@ export type KPITileTone = "default" | "ok" | "warning" | "danger";
 export interface KPITileProps {
   /** Small uppercased label above the value. */
   readonly label: string;
-  /** Hero value — number or pre-formatted string (e.g. "128,402"). */
-  readonly value: number | string;
+  /**
+   * Hero value — typically a number or pre-formatted string ("128,402"),
+   * but a ReactNode is allowed so callers can drop in a `<CountUpNumber />`
+   * for an animated tick on mount.
+   */
+  readonly value: number | string | ReactNode;
   /** Optional unit suffix shown smaller after the value (e.g. "/ 3"). */
   readonly unit?: string;
   /** One-liner trend / status under the value (mono, tertiary color). */

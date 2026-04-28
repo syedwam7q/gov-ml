@@ -92,7 +92,10 @@ export function ActivityFeed({
           return (
             <li
               key={event.id}
-              className={cn("flex items-start gap-3", compact ? "px-4 py-2.5" : "px-5 py-3.5")}
+              className={cn(
+                "flex items-start gap-3 aegis-fade-in",
+                compact ? "px-4 py-2.5" : "px-5 py-3.5",
+              )}
             >
               <span
                 aria-hidden

@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import {
   ActivityFeed,
+  CountUpNumber,
   KPITile,
   ModelCard,
   type ActivityFeedEvent,
@@ -70,19 +71,26 @@ export function FleetView({
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KPITile
           label="Models active"
-          value={totals.activeModels}
+          value={<CountUpNumber to={totals.activeModels} className="aegis-count-up" />}
           unit={`/ ${models.length}`}
           trend={totals.activeModels === models.length ? "all healthy" : "fleet partial"}
           tone={totals.activeModels === models.length ? "ok" : "warning"}
         />
         <KPITile
           label="Predictions · 24h"
-          value={compactInt(totals.predictions)}
+          value={
+            <CountUpNumber
+              to={totals.predictions}
+              format={compactInt}
+              durationMs={900}
+              className="aegis-count-up"
+            />
+          }
           trend={`across ${models.length} models`}
         />
         <KPITile
           label="Open incidents"
-          value={totals.openIncidents}
+          value={<CountUpNumber to={totals.openIncidents} className="aegis-count-up" />}
           trend={totals.openIncidents === 0 ? "clean window" : `${totals.severityHint}`}
           tone={
             totals.openIncidents === 0 ? "ok" : totals.criticalIncidents > 0 ? "danger" : "warning"
