@@ -1,0 +1,83 @@
+DESCRIPTION >
+    Fleet-wide KPI rollup — one row per registered model over the
+    requested window. Read by the control plane at
+    `/api/cp/fleet/kpi?window={24h|7d|30d}`.
+
+    Every model in the predictions stream gets a row. The headline
+    metric per model is hard-coded by family for now (credit →
+    demographic_parity_gender, toxicity → f1, readmission → recall);
+    Phase 6 will derive it from the active policy DSL.
+
+NODE windowed_predictions
+SQL >
+    %
+    SELECT
+        model_id,
+        count() AS predictions_total,
+        avg(latency_ms) AS p50_latency_ms,
+        quantile(0.95)(latency_ms) AS p95_latency_ms,
+        avg(toFloat32(y_pred != y_true)) AS error_rate
+    FROM predictions
+    WHERE ts >= now() - INTERVAL
+        {% if window == '7d' %} 7 DAY
+        {% elif window == '30d' %} 30 DAY
+        {% else %} 24 HOUR
+        {% end %}
+      AND y_true IS NOT NULL
+    GROUP BY model_id
+
+NODE fairness_per_model
+SQL >
+    %
+    SELECT
+        model_id,
+        subgroup_attr,
+        min(positive_rate) / max(positive_rate) AS parity_ratio
+    FROM (
+        SELECT
+            model_id,
+            subgroup_attr,
+            subgroup_value,
+            sum(n_predicted_pos) / sum(n) AS positive_rate
+        FROM subgroup_counters
+        WHERE ts >= now() - INTERVAL
+            {% if window == '7d' %} 7 DAY
+            {% elif window == '30d' %} 30 DAY
+            {% else %} 24 HOUR
+            {% end %}
+        GROUP BY model_id, subgroup_attr, subgroup_value
+    )
+    GROUP BY model_id, subgroup_attr
+
+NODE final
+SQL >
+    %
+    SELECT
+        p.model_id AS model_id,
+        p.predictions_total,
+        p.p50_latency_ms,
+        p.p95_latency_ms,
+        p.error_rate,
+        -- Headline metric per family — placeholder until policy-DSL drives it (Phase 6).
+        multiIf(
+            p.model_id = 'credit-v1',     'demographic_parity_gender',
+            p.model_id = 'toxicity-v1',   'f1',
+            p.model_id = 'readmission-v1','recall',
+            'accuracy'
+        ) AS headline_metric_key,
+        coalesce(any(f.parity_ratio), 1.0) AS headline_metric_value,
+        0.80 AS headline_metric_floor,
+        multiIf(
+            coalesce(any(f.parity_ratio), 1.0) >= 0.90, 'ok',
+            coalesce(any(f.parity_ratio), 1.0) >= 0.80, 'warning',
+            'danger'
+        ) AS headline_metric_status,
+        multiIf(
+            coalesce(any(f.parity_ratio), 1.0) < 0.80, 'HIGH',
+            coalesce(any(f.parity_ratio), 1.0) < 0.90, 'MEDIUM',
+            'OK'
+        ) AS severity,
+        0 AS open_incidents  -- joined from governance_decisions in Phase 6
+    FROM windowed_predictions p
+    LEFT JOIN fairness_per_model f USING (model_id)
+    GROUP BY p.model_id, p.predictions_total, p.p50_latency_ms, p.p95_latency_ms, p.error_rate

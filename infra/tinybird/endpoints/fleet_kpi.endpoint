@@ -1,0 +1,9 @@
+DESCRIPTION >
+    Public REST endpoint serving the fleet KPI rollup. Read by the
+    control plane at GET /api/cp/fleet/kpi.
+
+TOKEN read_dashboard READ
+
+NODE endpoint
+SQL >
+    SELECT * FROM fleet_kpi

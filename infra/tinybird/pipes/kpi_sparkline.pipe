@@ -1,0 +1,62 @@
+DESCRIPTION >
+    Per-model sparkline points — partitioned by `kind` so a single pipe
+    feeds four trends (predictions volume, latency, error rate, headline
+    metric). Read by the control plane to fill `ModelKPI.sparkline`.
+
+    Each output row is a `(model_id, kind, t, v)` quadruple. The `t`
+    column is hourly for the 24h window, daily for 7d/30d.
+
+NODE bucketed
+SQL >
+    %
+    SELECT
+        model_id,
+        {% if window == '7d' %} toStartOfDay(ts)
+        {% elif window == '30d' %} toStartOfDay(ts)
+        {% else %} toStartOfHour(ts)
+        {% end %} AS t,
+        count() AS predictions,
+        avg(latency_ms) AS latency,
+        avg(toFloat32(y_pred != y_true)) AS errors
+    FROM predictions
+    WHERE ts >= now() - INTERVAL
+        {% if window == '7d' %} 7 DAY
+        {% elif window == '30d' %} 30 DAY
+        {% else %} 24 HOUR
+        {% end %}
+      {% if defined(model_id) %} AND model_id = {{ String(model_id) }} {% end %}
+      AND y_true IS NOT NULL
+    GROUP BY model_id, t
+
+NODE headline_by_window
+SQL >
+    %
+    SELECT
+        model_id,
+        {% if window == '7d' %} toStartOfDay(ts)
+        {% elif window == '30d' %} toStartOfDay(ts)
+        {% else %} toStartOfHour(ts)
+        {% end %} AS t,
+        avg(toFloat32(n_predicted_pos) / nullIf(toFloat32(n), 0)) AS headline
+    FROM subgroup_counters
+    WHERE ts >= now() - INTERVAL
+        {% if window == '7d' %} 7 DAY
+        {% elif window == '30d' %} 30 DAY
+        {% else %} 24 HOUR
+        {% end %}
+      {% if defined(model_id) %} AND model_id = {{ String(model_id) }} {% end %}
+    GROUP BY model_id, t
+
+NODE final
+SQL >
+    %
+    -- One row per (model_id, kind, t) — projected as 4 union legs.
+    SELECT model_id, 'predictions' AS kind, t, toFloat64(predictions) AS v
+    FROM bucketed
+    UNION ALL
+    SELECT model_id, 'latency' AS kind, t, latency AS v FROM bucketed
+    UNION ALL
+    SELECT model_id, 'errors' AS kind, t, errors AS v FROM bucketed
+    UNION ALL
+    SELECT model_id, 'headline' AS kind, t, coalesce(headline, 0.0) AS v
+    FROM headline_by_window
