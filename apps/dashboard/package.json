@@ -7,13 +7,14 @@
     "dev": "next dev --turbo --port 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint app next.config.mjs postcss.config.mjs tailwind.config.ts --max-warnings 0",
+    "lint": "eslint app proxy.ts next.config.mjs postcss.config.mjs tailwind.config.ts --max-warnings 0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@aegis/shared-ts": "workspace:*",
     "@aegis/ui": "workspace:*",
+    "@clerk/nextjs": "^6.5.0",
     "next": "^16.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

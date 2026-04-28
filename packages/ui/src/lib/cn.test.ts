@@ -19,4 +19,15 @@ describe("cn", () => {
   it("dedupes equivalent classes", () => {
     expect(cn("p-2", "p-2")).toBe("p-2");
   });
+
+  it("keeps Aegis font-size and text-color side-by-side", () => {
+    // Default tailwind-merge collapses both as `text-*`. Our extended
+    // merger separates `text-aegis-{size}` from `text-aegis-{color}`.
+    expect(cn("text-aegis-sm", "text-aegis-fg-2")).toBe("text-aegis-sm text-aegis-fg-2");
+    expect(cn("text-aegis-base", "text-aegis-fg")).toBe("text-aegis-base text-aegis-fg");
+  });
+
+  it("still resolves conflicts within the Aegis font-size group", () => {
+    expect(cn("text-aegis-sm", "text-aegis-base")).toBe("text-aegis-base");
+  });
 });
