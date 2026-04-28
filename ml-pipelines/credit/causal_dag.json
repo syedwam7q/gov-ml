@@ -26,5 +26,16 @@
     ["loan_amount", "approval"],
     ["income", "approval"]
   ],
-  "notes": "Hand-curated from HMDA-LAR codebooks and the credit decisioning literature. Used by services/causal-attrib (Phase 5) for DoWhy GCM attribution."
+  "cause_kinds": {
+    "applicant_race": "proxy_attribute",
+    "applicant_ethnicity": "proxy_attribute",
+    "applicant_sex": "proxy_attribute",
+    "applicant_age": "proxy_attribute",
+    "co_applicant_present": "upstream_covariate",
+    "income": "upstream_covariate",
+    "loan_amount": "upstream_covariate",
+    "debt_to_income": "conditional_mechanism",
+    "approval": "conditional_mechanism"
+  },
+  "notes": "Hand-curated from HMDA-LAR codebooks and the credit decisioning literature. Used by services/causal-attrib (Phase 6) for DoWhy GCM attribution. cause_kinds field added in Phase 6 — drives the cause→action mapping in services/causal-attrib/cause_mapping.py per spec §12.1."
 }

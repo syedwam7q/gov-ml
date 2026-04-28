@@ -28,5 +28,16 @@
     ["time_in_hospital", "readmission"],
     ["comorbidity_severity", "readmission"]
   ],
-  "notes": "Hand-curated from Strack et al. 2014, Obermeyer 2019, and the clinical-decisioning literature. Captures the Optum-style failure mode: insurance_payer is a proxy for race that affects treatment intensity, which in turn drives readmission risk. Used by services/causal-attrib (Phase 5) for DoWhy GCM attribution."
+  "cause_kinds": {
+    "race": "proxy_attribute",
+    "gender": "proxy_attribute",
+    "age": "proxy_attribute",
+    "insurance_payer": "proxy_attribute",
+    "comorbidity_severity": "upstream_covariate",
+    "treatment_intensity": "upstream_covariate",
+    "time_in_hospital": "upstream_covariate",
+    "a1c_test_received": "calibration_mechanism",
+    "readmission": "conditional_mechanism"
+  },
+  "notes": "Hand-curated from Strack et al. 2014, Obermeyer 2019, and the clinical-decisioning literature. Captures the Optum-style failure mode: insurance_payer is a proxy for race that affects treatment intensity, which in turn drives readmission risk. Used by services/causal-attrib (Phase 6) for DoWhy GCM attribution. cause_kinds field added in Phase 6."
 }

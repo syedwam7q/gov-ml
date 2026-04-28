@@ -130,6 +130,48 @@ async def open_decision(payload: DecisionCreate, session: SessionDep) -> Governa
     return _row_to_decision(row)
 
 
+async def _maybe_call_causal_attrib(row: GovernanceDecisionRow) -> None:
+    """Phase 6 auto-attribution. Best-effort — failures leave the row
+    untouched and the operator-driven path can fill in the payload later.
+
+    Reads `reference_rows` and `current_rows` off the decision's
+    drift_signal payload — the detection services attach them when
+    they open the decision. If absent, attribution is skipped.
+    """
+    import logging  # noqa: PLC0415
+
+    import httpx  # noqa: PLC0415
+
+    from aegis_control_plane.config import get_settings  # noqa: PLC0415
+
+    drift = row.drift_signal or {}
+    ref_rows = drift.get("reference_rows") or []
+    cur_rows = drift.get("current_rows") or []
+    target_metric = drift.get("metric", "approval")
+    if not ref_rows or not cur_rows:
+        return
+
+    settings = get_settings()
+    attrib_url = f"{settings.causal_attrib_url.rstrip('/')}/attrib/run"
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(
+                attrib_url,
+                json={
+                    "model_id": row.model_id,
+                    "target_node": target_metric,
+                    "reference_rows": ref_rows,
+                    "current_rows": cur_rows,
+                },
+            )
+            resp.raise_for_status()
+            row.causal_attribution = resp.json()
+    except (httpx.HTTPError, httpx.RequestError):
+        logging.getLogger(__name__).warning(
+            "causal-attrib unavailable; analyze-state proceeds without attribution"
+        )
+
+
 @router.post("/{decision_id}/transition", response_model=GovernanceDecision)
 async def transition_decision(
     decision_id: str, payload: DecisionTransition, session: SessionDep
@@ -160,6 +202,13 @@ async def transition_decision(
         elif target == DecisionState.EVALUATED:
             # Reward vectors are floats — coerce dict[str, object] to dict[str, float]
             row.reward_vector = {k: float(v) for k, v in payload.payload.items()}  # type: ignore[arg-type]
+
+    # Phase 6 — auto-attribution via services/causal-attrib.
+    # Fires when state advances to ANALYZED *and* the caller didn't
+    # supply an explicit payload (explicit payloads bypass causal-attrib;
+    # used by tests + the seeder + future operator-driven flows).
+    if target == DecisionState.ANALYZED and payload.payload is None:
+        await _maybe_call_causal_attrib(row)
 
     row.state = target.value
     if target == DecisionState.EVALUATED:

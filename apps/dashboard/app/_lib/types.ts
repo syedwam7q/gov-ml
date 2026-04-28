@@ -140,6 +140,10 @@ export interface CausalAttribution {
   readonly counterfactual_value: number;
   readonly root_causes: readonly CausalRootCause[];
   readonly dag_url?: string;
+  /** Phase 6 — Pareto-policy prior; string action key (e.g. "REWEIGH"). */
+  readonly recommended_action?: string;
+  /** Phase 6 — "high" (DoWhy success) or "degraded" (DBShap fallback). */
+  readonly attribution_quality?: "high" | "degraded";
 }
 
 // ──────────── Action plans + Pareto front ────────────
