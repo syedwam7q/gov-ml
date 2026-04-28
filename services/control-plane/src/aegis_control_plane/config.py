@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     tinybird_host: str = Field(default="https://api.tinybird.co", alias="TINYBIRD_HOST")
     """Tinybird API host. Defaults to public endpoint; override for EU region."""
 
+    causal_attrib_url: str = Field(default="http://localhost:8003", alias="CAUSAL_ATTRIB_URL")
+    """Base URL for services/causal-attrib (Phase 6 wire)."""
+
     @property
     def database_url_sync(self) -> str:
         """Sync variant for Alembic offline mode."""
