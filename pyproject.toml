@@ -62,7 +62,11 @@ indent-style = "space"
 [tool.pyright]
 pythonVersion = "3.13"
 typeCheckingMode = "strict"
-include = ["packages/shared-py/src", "ml-pipelines/_shared/src", "services"]
+include = [
+  "packages/shared-py/src",
+  "ml-pipelines/_shared/src",
+  "services/control-plane/src",
+]
 exclude = ["**/.venv", "**/__pycache__", "**/node_modules"]
 
 # ml-pipelines code wraps sklearn / pandas / xgboost which don't ship strict
@@ -87,7 +91,7 @@ testpaths = [
   "ml-pipelines/credit/tests",
   "ml-pipelines/readmission/tests",
   "ml-pipelines/toxicity/tests",
-  "services",
+  "services/control-plane/tests",
   "tests",
 ]
 addopts = "-ra --strict-markers --strict-config --import-mode=importlib"
