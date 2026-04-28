@@ -23,6 +23,7 @@
     "@types/node": "^22.19.17",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^9.1.2",
+    "lefthook": "^1.13.6",
     "prettier": "^3.8.3",
     "turbo": "^2.9.6",
     "typescript": "^5.9.3",
