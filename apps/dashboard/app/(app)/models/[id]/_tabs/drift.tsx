@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { DistributionDiff } from "@aegis/ui";
 
 import type { AegisModel, ModelKPI } from "../../../../_lib/types";
+import { DriftSimulator } from "./_drift-simulator";
 
 interface DriftProps {
   readonly model: AegisModel;
@@ -34,9 +35,11 @@ const STATUS_TONE: Record<FeatureDriftRow["status"], string> = {
 
 export function ModelDriftTab({ model, kpi: _kpi }: DriftProps): ReactNode {
   const features = featuresForModel(model.id);
+  const headlineMetric = featureForSimulator(model.id);
 
   return (
     <div className="flex flex-col gap-6">
+      <DriftSimulator modelId={model.id} metric={headlineMetric} />
       <section className="aegis-card p-6">
         <header className="mb-4 flex items-baseline justify-between gap-3">
           <p className="aegis-mono-label">FEATURE DRIFT · 24H</p>
@@ -111,6 +114,12 @@ function Note({
 }
 
 // ──────────── Per-model seed features ────────────
+
+function featureForSimulator(modelId: string): string {
+  if (modelId === "credit-v1") return "demographic_parity_gender";
+  if (modelId === "toxicity-v1") return "toxicity_f1";
+  return "calibration_ece";
+}
 
 function featuresForModel(modelId: string): readonly FeatureDriftRow[] {
   const symmetric = (mu: number, n = 12, sigma = 1): readonly number[] => {

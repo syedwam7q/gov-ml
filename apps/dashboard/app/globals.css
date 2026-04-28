@@ -116,6 +116,72 @@
   .aegis-count-up {
     font-variant-numeric: tabular-nums;
   }
+
+  /* PSI drift simulator — bespoke range input that matches Editorial
+     Dark. Track is a thin stroke, thumb is an accent dot with a faint
+     glow. */
+  .aegis-drift-slider {
+    appearance: none;
+    width: 100%;
+    height: 24px;
+    background: transparent;
+    cursor: pointer;
+  }
+  .aegis-drift-slider:focus-visible {
+    outline: none;
+  }
+  .aegis-drift-slider::-webkit-slider-runnable-track {
+    height: 4px;
+    background: linear-gradient(
+      to right,
+      var(--status-ok, #4caf50) 0%,
+      var(--status-ok, #4caf50) 22%,
+      var(--sev-medium, #d4a017) 22%,
+      var(--sev-medium, #d4a017) 50%,
+      var(--sev-high, #f7503c) 50%,
+      var(--sev-high, #f7503c) 100%
+    );
+    border-radius: var(--aegis-radius-pill);
+  }
+  .aegis-drift-slider::-moz-range-track {
+    height: 4px;
+    background: linear-gradient(
+      to right,
+      var(--status-ok, #4caf50) 0%,
+      var(--status-ok, #4caf50) 22%,
+      var(--sev-medium, #d4a017) 22%,
+      var(--sev-medium, #d4a017) 50%,
+      var(--sev-high, #f7503c) 50%,
+      var(--sev-high, #f7503c) 100%
+    );
+    border-radius: var(--aegis-radius-pill);
+    border: none;
+  }
+  .aegis-drift-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-top: -7px;
+    border-radius: 999px;
+    background: var(--aegis-fg, #f8f8f6);
+    border: 2px solid var(--aegis-accent, #f7503c);
+    box-shadow: 0 0 0 4px rgba(247, 80, 60, 0.18);
+    cursor: grab;
+    transition: transform 120ms ease;
+  }
+  .aegis-drift-slider::-webkit-slider-thumb:active {
+    cursor: grabbing;
+    transform: scale(1.1);
+  }
+  .aegis-drift-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: var(--aegis-fg, #f8f8f6);
+    border: 2px solid var(--aegis-accent, #f7503c);
+    box-shadow: 0 0 0 4px rgba(247, 80, 60, 0.18);
+    cursor: grab;
+  }
 }
 
 @keyframes aegis-fade-in {
