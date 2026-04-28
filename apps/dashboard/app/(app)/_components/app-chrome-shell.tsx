@@ -1,5 +1,6 @@
 "use client";
 
+import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -100,6 +101,26 @@ export function AppChromeShell({ children, role = "admin" }: AppChromeShellProps
 
       <CommandPalette open={paletteOpen} onClose={closePalette} />
       <AssistantDrawer open={assistantOpen} onClose={closeAssistant} />
+
+      {/* Floating UserButton in the top-right. Clerk's component renders
+          its own avatar + dropdown — we just position it; the
+          ClerkProvider in app/layout.tsx supplies the Editorial Dark
+          theming so the popover doesn't read like a default Clerk modal. */}
+      <div className="pointer-events-none fixed right-5 top-3 z-30 flex items-center gap-2">
+        <SignedIn>
+          <span className="pointer-events-auto">
+            <UserButton afterSignOutUrl="/sign-in" />
+          </span>
+        </SignedIn>
+        <SignedOut>
+          <Link
+            href="/sign-in"
+            className="pointer-events-auto rounded-aegis-control border border-aegis-stroke bg-aegis-surface-2 px-3 py-1.5 font-mono text-[11px] uppercase tracking-aegis-mono text-aegis-fg-2 hover:text-aegis-fg"
+          >
+            sign in
+          </Link>
+        </SignedOut>
+      </div>
     </RoleProvider>
   );
 }

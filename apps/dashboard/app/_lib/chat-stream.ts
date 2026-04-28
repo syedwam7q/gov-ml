@@ -256,8 +256,22 @@ function friendlyAssistantError(raw: string): string {
   if (/AuthenticationError|401/i.test(raw)) {
     return "Governance Assistant unavailable — Groq rejected the API key. Set a working key, then retry.";
   }
-  if (/RateLimitError|429/i.test(raw)) {
-    return "Governance Assistant rate-limited by Groq. Wait a moment and retry.";
+  if (/RateLimitError|429|rate_limit_exceeded/i.test(raw)) {
+    // Groq's payload includes "Please try again in 8m11.616s" — surface
+    // that exact countdown so operators know whether to wait, swap the
+    // key, or upgrade to the dev tier.
+    // eslint-disable-next-line @typescript-eslint/prefer-regexp-exec
+    const waitMatch = raw.match(/try again in ([0-9hms.]+)/i);
+    const wait = waitMatch ? waitMatch[1] : null;
+    // eslint-disable-next-line @typescript-eslint/prefer-regexp-exec
+    const dailyMatch = raw.match(/tokens per day \(TPD\): Limit (\d+)/i);
+    const isDaily = Boolean(dailyMatch);
+    const upgrade =
+      "Free dev tier resets at midnight UTC; upgrade at https://console.groq.com/settings/billing for 10× headroom.";
+    if (isDaily) {
+      return `Governance Assistant rate-limited — daily token cap hit on the free Groq tier. ${upgrade}${wait ? ` Resets in ${wait}.` : ""}`;
+    }
+    return `Governance Assistant rate-limited by Groq${wait ? ` — try again in ${wait}` : "; wait a moment and retry"}.`;
   }
   if (/tool_use_failed|Failed to call a function/i.test(raw)) {
     return "The model returned a malformed tool call (a known Llama-3.1-8B quirk). Retry your question — the assistant routes the synthesis turn to the 70B model after the first tool call now.";

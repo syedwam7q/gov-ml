@@ -2,6 +2,53 @@
 
 Step-by-step installation, environment configuration, and run instructions. The "Prerequisites" block is verbatim-replayed nightly by `.github/workflows/setup-validator.yml` in a clean Ubuntu container — if it breaks, CI fails. Keep it accurate.
 
+## Zero-to-running in 90 seconds
+
+If you've cloned the repo and have Node 22 + pnpm 10 + Python 3.13 + `uv` already installed:
+
+```bash
+# 1) Install workspace dependencies (Node + Python)
+pnpm install
+uv sync --all-packages
+
+# 2) Configure environment
+cp .env.example .env
+# Edit .env: minimum required for the dashboard demo are
+# DATABASE_URL (Neon free tier), GROQ_API_KEY (Groq free dev tier),
+# CLERK_PUBLISHABLE_KEY + CLERK_SECRET_KEY (Clerk free tier).
+# The other keys (Tinybird, HF, Blob) are optional; the app degrades
+# gracefully when they're missing.
+
+# 3) Migrate + seed Postgres
+cd services/control-plane
+set -a && source ../../.env && set +a
+DATABASE_URL="$DATABASE_URL" uv run alembic upgrade head
+cd ../..
+uv run --package aegis-control-plane python -c "
+import asyncio
+from aegis_control_plane.db import make_engine, make_session_factory
+from aegis_control_plane.seed import seed_hero_scenario, seed_datasets
+async def main():
+    engine = make_engine()
+    factory = make_session_factory(engine)
+    async with factory() as s:
+        await seed_hero_scenario(s)
+        await seed_datasets(s)
+        await s.commit()
+    await engine.dispose()
+asyncio.run(main())
+"
+
+# 4) Boot the whole stack — control-plane + assistant + dashboard, one terminal
+pnpm start:all
+```
+
+Open http://localhost:3000 → sign in with Clerk → land on `/fleet` → click **Replay Apple Card 2019** to see the 7-stage choreography → press **⌘K** to ask the assistant a grounded question.
+
+Stop everything with **Ctrl+C** in the `pnpm start:all` terminal — the script tears down all child processes cleanly.
+
+The rest of this document is the long-form walkthrough: what each service does, how to boot only one, how to wire Vercel deploys, what every `.env` variable controls, and the per-phase test runbooks.
+
 ## Prerequisites
 
 Tested on Ubuntu 24.04 LTS and macOS 14+.
