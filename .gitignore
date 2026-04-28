@@ -1,0 +1,75 @@
+# --- env / secrets ----------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# --- node / pnpm / turborepo -----------------------------------------------
+node_modules/
+.pnpm-store/
+.turbo/
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# --- python (uv workspaces) ------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.uv/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.pyright/
+htmlcov/
+.coverage
+coverage.xml
+
+# --- ML pipelines ----------------------------------------------------------
+*.ckpt
+*.safetensors
+*.bin
+*.onnx
+*.joblib
+*.pkl
+ml-pipelines/**/artifacts/
+ml-pipelines/**/wandb/
+ml-pipelines/**/mlruns/
+data/raw/
+data/processed/
+data/snapshots/
+!data/.gitkeep
+
+# --- vercel / next ---------------------------------------------------------
+.vercel/
+*.log
+
+# --- editor / OS -----------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+!.vscode/settings.example.json
+
+# --- superpowers brainstorming workspace -----------------------------------
+.superpowers/
+
+# --- paper drafts ----------------------------------------------------------
+docs/paper/*.aux
+docs/paper/*.log
+docs/paper/*.out
+docs/paper/*.toc
+docs/paper/*.bbl
+docs/paper/*.blg
+docs/paper/*.synctex.gz
+docs/paper/*.fls
+docs/paper/*.fdb_latexmk
+
+# --- aegis: local generated -----------------------------------------------
+.aegis-cache/
+.aegis-local/
