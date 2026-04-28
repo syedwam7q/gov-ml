@@ -58,17 +58,31 @@ def _detect_url_for_family(family: ModelFamily) -> str:
 
 
 @router.get("/heartbeat", status_code=status.HTTP_200_OK)
-async def heartbeat(session: SessionDep) -> dict[str, str]:
-    """Cron heartbeat. Records a single audit row so we can prove cron firing."""
+async def heartbeat(session: SessionDep) -> dict[str, str | bool]:
+    """Cron heartbeat. Records a single audit row so we can prove cron firing.
+
+    When `AEGIS_SEED_HERO=true` is set in the environment, the heartbeat
+    also runs the idempotent Apple-Card-2019 hero-scenario seeder (Phase 5
+    Task 20). The seeder is a no-op once the scenario is in place — set
+    the env var on first deploy then remove it.
+    """
+    import os  # noqa: PLC0415
+
+    seeded = False
+    if os.environ.get("AEGIS_SEED_HERO", "false").lower() == "true":
+        from aegis_control_plane.seed import seed_hero_scenario  # noqa: PLC0415
+
+        seeded = await seed_hero_scenario(session)
+
     await append_audit_row(
         session,
         actor="system:cron",
         action="cron_heartbeat",
-        payload={"source": "vercel-cron"},
+        payload={"source": "vercel-cron", "seeded_hero": seeded},
         decision_id=None,
     )
     await session.commit()
-    return {"status": "ok"}
+    return {"status": "ok", "seeded_hero": seeded}
 
 
 @router.get("/detect", status_code=status.HTTP_200_OK)
