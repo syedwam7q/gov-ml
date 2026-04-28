@@ -15,6 +15,7 @@ members = [
   "services/detect-tabular",
   "services/detect-text",
   "services/causal-attrib",
+  "services/action-selector",
 ]
 
 [tool.uv]
@@ -124,6 +125,7 @@ testpaths = [
   "services/detect-tabular/tests",
   "services/detect-text/tests",
   "services/causal-attrib/tests",
+  "services/action-selector/tests",
   "tests",
 ]
 addopts = "-ra --strict-markers --strict-config --import-mode=importlib -m 'not slow'"
