@@ -84,6 +84,7 @@ gov-ml/
 ### Task 1: Project README
 
 **Files:**
+
 - Create: `README.md`
 
 - [ ] **Step 1: Create README.md**
@@ -122,6 +123,7 @@ git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsig
 ### Task 2: pnpm workspace
 
 **Files:**
+
 - Create: `package.json`
 - Create: `pnpm-workspace.yaml`
 
@@ -183,6 +185,7 @@ git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsig
 ### Task 3: Turborepo
 
 **Files:**
+
 - Create: `turbo.json`
 - Modify: `package.json` (add turbo dev dep)
 
@@ -239,6 +242,7 @@ git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsig
 ### Task 4: uv Python workspace
 
 **Files:**
+
 - Create: `pyproject.toml`
 
 - [ ] **Step 1: Verify uv is installed**
@@ -296,6 +300,7 @@ git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsig
 ### Task 5: Python tooling config (ruff + pyright + pytest)
 
 **Files:**
+
 - Modify: `pyproject.toml`
 
 - [ ] **Step 1: Append ruff / pyright / pytest config sections**
@@ -372,6 +377,7 @@ git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsig
 ### Task 6: Root TypeScript configs
 
 **Files:**
+
 - Create: `tsconfig.base.json`
 - Create: `tsconfig.json`
 
@@ -411,10 +417,7 @@ git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsig
 {
   "extends": "./tsconfig.base.json",
   "include": [],
-  "references": [
-    { "path": "./packages/shared-ts" },
-    { "path": "./packages/ui" }
-  ]
+  "references": [{ "path": "./packages/shared-ts" }, { "path": "./packages/ui" }]
 }
 ```
 
@@ -434,6 +437,7 @@ git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsig
 ### Task 7: ESLint + Prettier
 
 **Files:**
+
 - Create: `eslint.config.mjs`
 - Create: `.prettierrc`
 - Create: `.prettierignore`
@@ -538,6 +542,7 @@ git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsig
 ### Task 8: lefthook pre-commit hooks
 
 **Files:**
+
 - Create: `lefthook.yml`
 - Modify: `package.json`
 
@@ -592,6 +597,7 @@ git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsig
 ### Task 9: `.env.example` (full env-var inventory)
 
 **Files:**
+
 - Create: `.env.example`
 
 - [ ] **Step 1: Create `.env.example`**
@@ -659,6 +665,7 @@ git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsig
 ### Task 10: `packages/shared-py` with first Pydantic schemas
 
 **Files:**
+
 - Create: `packages/shared-py/pyproject.toml`
 - Create: `packages/shared-py/src/aegis_shared/__init__.py`
 - Create: `packages/shared-py/src/aegis_shared/types.py`
@@ -862,6 +869,7 @@ git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsig
 ### Task 11: Merkle-chained audit-log primitives in `shared-py`
 
 **Files:**
+
 - Create: `packages/shared-py/src/aegis_shared/audit.py`
 - Create: `packages/shared-py/tests/test_audit.py`
 - Modify: `packages/shared-py/src/aegis_shared/__init__.py`
@@ -1225,6 +1233,7 @@ git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsig
 ### Task 12: `packages/shared-ts` — TypeScript types generated from `shared-py`
 
 **Files:**
+
 - Create: `packages/shared-ts/package.json`
 - Create: `packages/shared-ts/tsconfig.json`
 - Create: `packages/shared-ts/scripts/generate.ts`
@@ -1407,6 +1416,7 @@ git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsig
 ### Task 13: `packages/ui` scaffolding
 
 **Files:**
+
 - Create: `packages/ui/package.json`
 - Create: `packages/ui/tsconfig.json`
 - Create: `packages/ui/src/index.ts`
@@ -1542,6 +1552,7 @@ git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsig
 ### Task 14: GitHub Actions workflows (CI baseline)
 
 **Files:**
+
 - Create: `.github/workflows/pr.yml`
 - Create: `.github/workflows/setup-validator.yml`
 - Create: `.github/workflows/chain-anchor.yml`
@@ -1664,6 +1675,7 @@ git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsig
 ### Task 15: Directory placeholders for future phases
 
 **Files:**
+
 - Create: `.gitkeep` files inside the planned-but-empty directories
 
 - [ ] **Step 1: Create directories and `.gitkeep` files**
@@ -1706,6 +1718,7 @@ git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsig
 ### Task 16: `vercel.ts` typed project config
 
 **Files:**
+
 - Create: `vercel.ts`
 - Modify: `package.json` (adds `@vercel/config` dev dep)
 
@@ -1744,6 +1757,7 @@ git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsig
 ### Task 17: Initial `setup.md`
 
 **Files:**
+
 - Create: `setup.md`
 
 - [ ] **Step 1: Write `setup.md`**
@@ -1758,21 +1772,26 @@ Step-by-step installation, environment configuration, and run instructions. The 
 Tested on Ubuntu 24.04 LTS and macOS 14+.
 
 <!-- setup-md-validator:start -->
+
 # Node.js 22 + pnpm
+
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt-get install -y nodejs
 sudo npm install -g pnpm@9.15.0
 
 # Python 3.13 + uv
+
 sudo apt-get install -y python3.13 python3.13-venv
 curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 
 # Project dependencies
+
 pnpm install --frozen-lockfile
 uv sync --frozen
 
 # Verify everything is wired up
+
 pnpm format:check
 pnpm lint
 uv run ruff check .
@@ -1781,20 +1800,21 @@ uv run pytest -v
 pnpm --filter @aegis/shared-ts generate
 pnpm typecheck
 pnpm test
+
 <!-- setup-md-validator:end -->
 
 ## Local environment
 
 1. Copy `.env.example` to `.env`:
 
-       cp .env.example .env
+   cp .env.example .env
 
 2. Fill in the values for each section. The relevant signup pages and free-tier confirmations are documented next to each variable in `.env.example`. None of the services require a paid plan.
 
 3. Generate the two HMAC secrets:
 
-       openssl rand -hex 32   # → INTER_SERVICE_HMAC_SECRET
-       openssl rand -hex 64   # → AUDIT_LOG_HMAC_SECRET
+   openssl rand -hex 32 # → INTER_SERVICE_HMAC_SECRET
+   openssl rand -hex 64 # → AUDIT_LOG_HMAC_SECRET
 
 ## Run
 
@@ -1863,14 +1883,14 @@ git push origin phase-0-complete
 
 **Spec coverage** (each cited spec section gets a Phase 0 task):
 
-| Spec § | Requirement | Task |
-| --- | --- | --- |
-| 4.1 | Repo monorepo layout | 2, 3, 4, 15 |
-| 4.4 | Shared schemas, schema-is-law discipline, single-writer audit-log writer | 10, 11, 12 |
-| 6.2 | Merkle audit-log invariants (chain, HMAC, daily anchor) | 11, 14 (chain-anchor placeholder) |
-| 8.7 | CI organization (pr.yml, setup-validator.yml, chain-anchor.yml) | 14 |
-| 13 (Phase 0) | "Repo scaffolding, Turborepo + uv workspace, CI baseline, setup.md v0.1, vercel.ts" | 1–18 |
-| 13 (deliverable: setup.md CI-validated) | nightly replay of setup.md | 14, 17 |
+| Spec §                                  | Requirement                                                                         | Task                              |
+| --------------------------------------- | ----------------------------------------------------------------------------------- | --------------------------------- |
+| 4.1                                     | Repo monorepo layout                                                                | 2, 3, 4, 15                       |
+| 4.4                                     | Shared schemas, schema-is-law discipline, single-writer audit-log writer            | 10, 11, 12                        |
+| 6.2                                     | Merkle audit-log invariants (chain, HMAC, daily anchor)                             | 11, 14 (chain-anchor placeholder) |
+| 8.7                                     | CI organization (pr.yml, setup-validator.yml, chain-anchor.yml)                     | 14                                |
+| 13 (Phase 0)                            | "Repo scaffolding, Turborepo + uv workspace, CI baseline, setup.md v0.1, vercel.ts" | 1–18                              |
+| 13 (deliverable: setup.md CI-validated) | nightly replay of setup.md                                                          | 14, 17                            |
 
 **Placeholder scan:** No `TBD`/`TODO`/`fill in details` strings; no `Add appropriate error handling` style instructions; no "similar to Task N" references — every task contains complete code.
 
@@ -1883,6 +1903,7 @@ git push origin phase-0-complete
 ## What lands in Phase 1 (next plan)
 
 ML pipelines + 3 trained models with cards/datasheets:
+
 - `ml-pipelines/credit/` — XGBoost on HMDA / Lending Club; Mitchell 2019 model card; Gebru 2021 datasheet.
 - `ml-pipelines/readmission/` — XGBoost on Diabetes 130-US (UCI); model card + datasheet.
 - `ml-pipelines/toxicity/` — DistilBERT fine-tune on Jigsaw Civil Comments; model card + datasheet.
