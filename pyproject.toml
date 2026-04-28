@@ -85,6 +85,18 @@ reportUnknownParameterType = "none"
 reportUnknownLambdaType = "none"
 reportMissingTypeArgument = "none"
 
+# detect-tabular's drift detectors lean on pandas + scipy which lack
+# strict type stubs. Same override as ml-pipelines.
+[[tool.pyright.executionEnvironments]]
+root = "services/detect-tabular"
+reportMissingTypeStubs = "none"
+reportUnknownVariableType = "none"
+reportUnknownMemberType = "none"
+reportUnknownArgumentType = "none"
+reportUnknownParameterType = "none"
+reportUnknownLambdaType = "none"
+reportMissingTypeArgument = "none"
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = [

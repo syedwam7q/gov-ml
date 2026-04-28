@@ -11,16 +11,18 @@ dependencies = [
   "pydantic>=2.10.0",
   "pandas>=2.2.0",
   "numpy>=2.1.0",
+  "scipy>=1.14.0",
   "fairlearn>=0.11.0",
 ]
 
 # Evidently and NannyML have transitive constraints that are incompatible
 # with the rest of our workspace (NannyML pins xgboost<3.0; Evidently pulls
-# kaleido 0.2.x which has no macOS-arm64 wheel). For Task 3, the detector
-# wraps a custom drift implementation built on scipy + fairlearn (already
-# in the workspace) and NannyML's CBPE is wired through a separate venv at
-# the deployment boundary. See `docs/superpowers/plans/2026-04-28-aegis-phase-3-detection-services.md`
-# Task 3 for the resolution plan.
+# kaleido 0.2.x which has no macOS-arm64 wheel). The detector here wraps a
+# custom drift implementation built on scipy + fairlearn (already in the
+# workspace), which is sufficient for the metrics we monitor (PSI,
+# KS-test, demographic parity, equal opportunity, ECE). NannyML's CBPE
+# can be wired through a separate venv at the deployment boundary if
+# label-free perf-est is needed in production.
 
 [tool.uv.sources]
 aegis-shared = { workspace = true }
