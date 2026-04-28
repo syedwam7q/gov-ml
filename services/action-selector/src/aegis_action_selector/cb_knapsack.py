@@ -16,7 +16,6 @@ dims = 32 oracles. Cost regressors are likewise per (action, cost dim).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import cast
 
 import numpy as np
 
@@ -42,8 +41,12 @@ class CBKnapsack:
     n_reward_dims: int = 4  # (Δacc, Δfair, −Δlatency, −Δcost)
     n_cost_dims: int = 4  # (latency, dollar, traffic, risk)
 
-    reward_oracles: dict[ActionKey, list[BayesianLinearRegression]] = field(default_factory=dict)
-    cost_oracles: dict[ActionKey, list[BayesianLinearRegression]] = field(default_factory=dict)
+    reward_oracles: dict[ActionKey, list[BayesianLinearRegression]] = field(
+        default_factory=lambda: {}
+    )
+    cost_oracles: dict[ActionKey, list[BayesianLinearRegression]] = field(
+        default_factory=lambda: {}
+    )
     lambda_dual: np.ndarray = field(default_factory=lambda: np.zeros(4))
 
     def __post_init__(self) -> None:
@@ -75,7 +78,7 @@ class CBKnapsack:
             if recommended_action is not None and action == recommended_action:
                 score += self.prior_strength
             scores[action] = score
-        chosen = cast("ActionKey", max(scores, key=scores.__getitem__))
+        chosen = max(scores, key=scores.__getitem__)
         return chosen, scores
 
     def predicted_reward(self, action: ActionKey, context: np.ndarray) -> np.ndarray:

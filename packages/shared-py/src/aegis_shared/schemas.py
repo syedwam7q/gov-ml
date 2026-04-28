@@ -303,6 +303,46 @@ class ComplianceMapping(AegisModel):
     panel_evidence: str = Field(min_length=1)
 
 
+# -- Governance Assistant ----------------------------------------------------
+
+
+class ToolCall(AegisModel):
+    """One executed tool call inside an assistant turn (spec §11.2)."""
+
+    name: str = Field(min_length=1)
+    arguments: dict[str, Any] = Field(default_factory=dict)
+    result_summary: str = ""
+    """Truncated, human-readable summary the model sees. The full JSON
+    response lives in `result_payload` and renders as a chip in the chat UI."""
+    result_payload: dict[str, Any] | list[Any] | None = None
+    error: str | None = None
+    """Set when the tool dispatcher raised; the assistant surfaces this
+    rather than hallucinating a successful result."""
+
+
+def _empty_tool_calls() -> list[ToolCall]:
+    return []
+
+
+class ChatTurn(AegisModel):
+    """One turn in a Governance Assistant conversation."""
+
+    role: str = Field(pattern=r"^(user|assistant|system|tool)$")
+    content: str = ""
+    tool_calls: list[ToolCall] = Field(default_factory=_empty_tool_calls)
+
+
+class ChatRequest(AegisModel):
+    """Request body for `POST /chat/stream` (spec §11.3)."""
+
+    messages: list[ChatTurn] = Field(min_length=1)
+    """Conversation history. The user's current turn is the last entry."""
+    scope: dict[str, Any] = Field(default_factory=dict)
+    """Free-form context from the dashboard — e.g. `{"decision_id": "..."}`
+    when the Cmd+K drawer opens scoped to `/incidents/<id>`. The system
+    prompt threads this into the model's context."""
+
+
 __all__ = [
     "ActivityEvent",
     "AegisModel",
@@ -313,6 +353,8 @@ __all__ = [
     "CausalAttribution",
     "CausalRootCause",
     "ChainVerificationResult",
+    "ChatRequest",
+    "ChatTurn",
     "ComplianceMapping",
     "Dataset",
     "DriftSignal",
@@ -322,4 +364,5 @@ __all__ = [
     "ModelKPI",
     "ModelVersion",
     "Policy",
+    "ToolCall",
 ]

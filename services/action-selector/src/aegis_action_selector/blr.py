@@ -62,3 +62,30 @@ class BayesianLinearRegression:
     def ucb_bonus(self, x: np.ndarray, beta: float) -> float:
         """β × predictive std deviation. Spec §12.2."""
         return beta * self.predict_std(x)
+
+    # ──────────── Persistence accessors ────────────
+    #
+    # The Phase 8 Redis-backed persistence module needs to round-trip
+    # the posterior. Rather than crack open the leading-underscore
+    # internals, we expose dedicated public accessors so the
+    # `reportPrivateUsage` discipline holds elsewhere.
+
+    @property
+    def precision_matrix(self) -> np.ndarray:
+        """Read the posterior precision matrix Λ (shape: n_features²)."""
+        return self._precision
+
+    @property
+    def mean_x_precision(self) -> np.ndarray:
+        """Read μᵀΛ (the unscaled mean-times-precision vector)."""
+        return self._mean_times_precision
+
+    def restore_state(self, *, precision: np.ndarray, mean_times_precision: np.ndarray) -> None:
+        """Replace the posterior with externally-supplied state.
+
+        Used by `persistence.py` after a Redis cache hit. Expects
+        `precision` of shape (n_features, n_features) and
+        `mean_times_precision` of shape (n_features,).
+        """
+        self._precision = np.asarray(precision, dtype=float)
+        self._mean_times_precision = np.asarray(mean_times_precision, dtype=float)

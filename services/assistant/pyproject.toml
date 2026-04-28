@@ -1,0 +1,39 @@
+[project]
+name = "aegis-assistant"
+version = "0.1.0"
+description = "Groq-powered Governance Assistant for Aegis (spec §11) — grounded tool-using agent over the MAPE-K knowledge plane"
+requires-python = ">=3.13"
+dependencies = [
+  "aegis-shared",
+  "fastapi>=0.115.0",
+  "uvicorn[standard]>=0.32.0",
+  "httpx>=0.28.0",
+  "pydantic>=2.10.0",
+  "pydantic-settings>=2.6.0",
+  "groq>=0.13.0",
+  "sse-starlette>=2.1.0",
+  "redis>=5.2.0",
+]
+
+[tool.uv.sources]
+aegis-shared = { workspace = true }
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3.0",
+  "pytest-asyncio>=0.24.0",
+  "respx>=0.21.0",
+  "fakeredis>=2.26.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aegis_assistant"]
+
+[tool.pyright]
+include = ["src", "tests"]
+strict = ["src/aegis_assistant"]
+pythonVersion = "3.13"

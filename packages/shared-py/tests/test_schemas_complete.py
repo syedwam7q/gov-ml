@@ -27,6 +27,9 @@ REQUIRED_WIRE_TYPES: tuple[str, ...] = (
     "ChainVerificationResult",
     "Dataset",
     "ComplianceMapping",
+    "ChatTurn",
+    "ToolCall",
+    "ChatRequest",
 )
 
 

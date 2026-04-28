@@ -6,6 +6,8 @@ export {
   type ActivityFeedKind,
   type ActivityFeedProps,
 } from "./components/activity-feed";
+export { CountUpNumber, type CountUpNumberProps } from "./components/count-up-number";
+export { PulseOnChange, type PulseOnChangeProps } from "./components/pulse-on-change";
 export {
   ApprovalCard,
   type ApprovalAction,

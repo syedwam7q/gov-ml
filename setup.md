@@ -398,3 +398,72 @@ _and_ the caller didn't supply an explicit payload. The Phase 6
 | Var                   | Default                 | Purpose                                                  |
 | --------------------- | ----------------------- | -------------------------------------------------------- |
 | `ACTION_SELECTOR_URL` | `http://localhost:8004` | Where the control plane reaches services/action-selector |
+
+## Phase 8 — Governance Assistant (`services/assistant`)
+
+The Aegis Governance Assistant is a Groq-powered tool-using agent that
+grounds every claim on a tool call against the live MAPE-K knowledge
+plane. The dashboard's full-screen `/chat` page and the Cmd+K drawer
+both consume its SSE endpoint.
+
+**1. Boot the assistant:**
+
+    # Required: a Groq dev-tier API key (free) — https://console.groq.com/keys
+    export GROQ_API_KEY=gsk_...
+    # Optional: override model rotation defaults.
+    export GROQ_MODEL_QUALITY=llama-3.3-70b-versatile  # final synthesis
+    export GROQ_MODEL_FAST=llama-3.1-8b-instant        # tool-call decisions
+
+    uv sync --all-packages
+    uv run --package aegis-assistant uvicorn aegis_assistant.app:app --port 8005
+
+Smoke-test:
+
+    curl http://127.0.0.1:8005/healthz
+    # → {"ok": true, "service": "assistant", "version": "0.1.0"}
+
+**2. Wire the dashboard:**
+
+The Next.js dev server proxies `/api/assistant/*` to the assistant
+service via `apps/dashboard/next.config.mjs` (default
+`http://127.0.0.1:8005`; override via `AEGIS_ASSISTANT_DEV_URL`). With
+both the control plane (port 8000) and the assistant (port 8005)
+running, open the dashboard, hit `⌘K`, and type — the drawer opens a
+tool-grounded conversation. The full-screen `/chat` route is the same
+hook with a wider transcript.
+
+When `GROQ_API_KEY` is unset, `/chat/stream` returns 503 and the
+dashboard renders a clear "set GROQ_API_KEY" fallback. Health probes,
+the activity feed, and every other page keep working.
+
+**3. (Optional) Persist the Phase 7 bandit posterior to Redis:**
+
+    export REDIS_URL=redis://localhost:6379
+
+When set, the action-selector serializes each `model_id`'s
+`CBKnapsack` posterior to `action_selector:bandit:<model_id>` after
+every update. Restart the service and the posterior survives — no
+re-warming required. Falls back to in-memory when unset, matching the
+Phase 7 dev workflow.
+
+**4. Replay Apple Card 2019 — the live demo button:**
+
+The Fleet overview header carries a "Replay Apple Card 2019" CTA. It
+posts to `/api/cp/internal/demo/apple-card`, which broadcasts a
+choreographed sequence of `demo_*` SSE events the dashboard renders
+as an animated MAPE-K walkthrough (drift detection → causal
+attribution → Pareto-front planning → execution → audit). The same
+drift gate at PSI ≥ 0.20 lights up the "Trigger live MAPE-K demo"
+button on every model's drift tab.
+
+**Configuration knobs (Phase 8 additions):**
+
+| Var                       | Default                   | Purpose                                               |
+| ------------------------- | ------------------------- | ----------------------------------------------------- |
+| `GROQ_API_KEY`            | `""`                      | Dev-tier Groq key. Empty = `/chat/stream` returns 503 |
+| `GROQ_MODEL_QUALITY`      | `llama-3.3-70b-versatile` | Final-synthesis model                                 |
+| `GROQ_MODEL_FAST`         | `llama-3.1-8b-instant`    | Tool-call decision model                              |
+| `CHAT_MAX_ITERATIONS`     | `6`                       | Hard cap on tool-call loop iterations per chat turn   |
+| `TOOL_REQUEST_TIMEOUT_S`  | `10.0`                    | Per-request HTTP timeout for tool dispatchers         |
+| `REDIS_URL`               | `""`                      | When set, action-selector persists posterior to Redis |
+| `AEGIS_ASSISTANT_DEV_URL` | `http://127.0.0.1:8005`   | Where the dashboard proxies `/api/assistant/*` in dev |

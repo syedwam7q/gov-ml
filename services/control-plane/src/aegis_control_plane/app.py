@@ -13,6 +13,7 @@ from aegis_control_plane.routers import cron as cron_router
 from aegis_control_plane.routers import csv_export as csv_export_router
 from aegis_control_plane.routers import datasets as datasets_router
 from aegis_control_plane.routers import decisions as decisions_router
+from aegis_control_plane.routers import demo as demo_router
 from aegis_control_plane.routers import fleet as fleet_router
 from aegis_control_plane.routers import health as health_router
 from aegis_control_plane.routers import kpi as kpi_router
@@ -48,6 +49,7 @@ def build_app() -> FastAPI:
     app.include_router(reachability_router.router)
     app.include_router(csv_export_router.router)
     app.include_router(datasets_router.router)
+    app.include_router(demo_router.router)
 
     @app.get("/", include_in_schema=False)
     async def _root() -> RedirectResponse:  # noqa: RUF029  # registered by decorator

@@ -1,58 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Kbd, SparkleIcon } from "@aegis/ui";
 
-interface SeededTurn {
-  readonly role: "user" | "assistant";
-  readonly content: string;
-  /** Tool calls referenced inline by the assistant turn. */
-  readonly tools?: readonly { readonly name: string; readonly result: string }[];
-}
-
-const SEED_TRANSCRIPT: readonly SeededTurn[] = [
-  {
-    role: "user",
-    content: "Why did credit-v1 trigger the high-severity fairness signal at 2:30am?",
-  },
-  {
-    role: "assistant",
-    content:
-      "credit-v1 raised a HIGH severity at 02:32 UTC because demographic_parity_ratio for the female applicant cohort dropped to 0.71 — below the policy floor of 0.80.\n\nThe causal-attribution service traces 62% of the drop to a shift in `applicant_income_thousands`: the female-applicant income distribution moved outside the training support (PSI = 0.31, alarm at 0.20). A secondary 21% comes from a feature interaction between income and credit_history — the same pattern flagged in the 2019 Apple-Card investigation, where joint-filing applicants surface disparate allocation despite shared finances.",
-    tools: [
-      {
-        name: "get_decision",
-        result: "decision_id=dec-001 · severity=HIGH · state=evaluated",
-      },
-      {
-        name: "explain_drift_signal",
-        result:
-          "credit-v1 / demographic_parity_ratio · top cause = dataset_drift.applicant_income_thousands (62%)",
-      },
-    ],
-  },
-  {
-    role: "user",
-    content: "What action did we take and is the metric back inside the floor?",
-  },
-  {
-    role: "assistant",
-    content:
-      "Operator ana.salah@aegis.dev approved a rollback to credit-v1 / 1.4.0 at 03:45 UTC. The executor completed the rollback in 4m 38s. Post-action demographic_parity_ratio = 0.92, comfortably back above the 0.80 floor. A retrain with stratified income sampling is enqueued to ship the long-term fix once it stabilises.",
-    tools: [
-      {
-        name: "get_decision",
-        result: "decision_id=dec-001 · post_action_metric=0.92 · reward.safety=0.92",
-      },
-      {
-        name: "get_audit_chain",
-        result: "8 rows · last sequence_n=8 · chain verified",
-      },
-    ],
-  },
-];
+import { useChatStream } from "../../_lib/chat-stream";
+import type { ChatTurn } from "../../_lib/types";
 
 const PROMPT_LIBRARY: readonly {
   readonly category: string;
@@ -61,31 +15,51 @@ const PROMPT_LIBRARY: readonly {
   {
     category: "FLEET STATE",
     prompts: [
-      "Summarise the fleet's open incidents.",
-      "Which model has the worst-trending fairness metric this week?",
-      "Show me every CRITICAL severity in the last 7 days.",
+      "What models are we monitoring right now?",
+      "Show me the headline fairness metric for credit-v1 over the last 24h.",
+      "Are there any open incidents on the fleet?",
     ],
   },
   {
     category: "DECISIONS",
     prompts: [
-      "Why did credit-v1 trigger today's high-severity signal?",
-      "List approvals waiting on me.",
-      "What action did the executor run for dec-001 and why?",
+      "What's pending in the approval queue?",
+      "Why was REWEIGH chosen for the most recent credit-v1 incident?",
+      "Walk me through the audit chain for the most recent decision.",
     ],
   },
   {
-    category: "AUDIT + COMPLIANCE",
+    category: "ATTRIBUTION",
     prompts: [
-      "Verify the last 100 audit rows.",
-      "Which EU AI Act clauses are still partial?",
-      "Surface evidence for ECOA Reg-B § 1002.4.",
+      "What's driving the demographic_parity_gender drift on credit-v1?",
+      "Which root causes show up most often across the fleet?",
+      "Was the recommended action accepted by the planner?",
     ],
   },
 ];
 
+const STARTER_HINT = `Ask anything about the fleet — every claim is grounded on a tool call against the live control plane.
+
+Try one of the prompts on the right, or type your own.`;
+
 export function ChatView(): ReactNode {
+  const { turns, status, send } = useChatStream();
   const [draft, setDraft] = useState("");
+  const transcriptRef = useRef<HTMLOListElement>(null);
+
+  useEffect(() => {
+    transcriptRef.current?.scrollTo({
+      top: transcriptRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [turns]);
+
+  const onSubmit = (): void => {
+    const text = draft.trim();
+    if (!text || status === "streaming") return;
+    void send(text);
+    setDraft("");
+  };
 
   return (
     <section className="flex h-[calc(100dvh-var(--aegis-nav-height))] flex-col">
@@ -98,7 +72,7 @@ export function ChatView(): ReactNode {
             GOVERNANCE ASSISTANT
           </p>
           <span className="aegis-mono text-aegis-xs text-aegis-fg-3">
-            llama 3.3 70B versatile · 7 grounded tools · backend wires phase 8
+            llama 3.3 70B versatile · 7 grounded tools · {statusLabel(status)}
           </span>
         </div>
         <p className="max-w-3xl text-aegis-sm text-aegis-fg-2">
@@ -110,26 +84,36 @@ export function ChatView(): ReactNode {
 
       <div className="grid flex-1 min-h-0 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,260px)]">
         <div className="flex min-h-0 flex-col">
-          <ol className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-6">
-            {SEED_TRANSCRIPT.map((turn, idx) => (
-              <Turn key={idx} turn={turn} />
+          <ol ref={transcriptRef} className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-6">
+            {turns.length === 0 && (
+              <li className="aegis-card max-w-2xl px-4 py-3 text-aegis-sm text-aegis-fg-2 whitespace-pre-line">
+                {STARTER_HINT}
+              </li>
+            )}
+            {turns.map((turn, idx) => (
+              <Turn
+                key={idx}
+                turn={turn}
+                streaming={status === "streaming" && idx === turns.length - 1}
+              />
             ))}
-            <li className="aegis-card flex items-center gap-3 px-4 py-3 text-aegis-xs text-aegis-fg-3">
-              <span className="h-2 w-2 rounded-full bg-aegis-accent" aria-hidden />
-              <span>backend wires in Phase 8 · transcript above is a seeded preview</span>
-            </li>
           </ol>
 
-          <Composer draft={draft} onChange={setDraft} />
+          <Composer
+            draft={draft}
+            onChange={setDraft}
+            onSubmit={onSubmit}
+            disabled={status === "streaming"}
+          />
         </div>
 
         <aside className="hidden border-l border-aegis-stroke bg-aegis-surface-1 px-5 py-6 lg:flex lg:flex-col lg:gap-6 overflow-y-auto">
           <div className="space-y-2">
             <p className="aegis-mono-label">SCOPE</p>
             <p className="text-aegis-xs text-aegis-fg-2 leading-aegis-snug">
-              Drift signals, decisions, audit rows, approvals, Pareto fronts, and compliance
-              evidence. Out-of-scope queries are politely refused — the assistant cannot speculate
-              about state it cannot verify.
+              Drift signals, decisions, audit rows, approvals, Pareto fronts, and causal
+              attribution. Out-of-scope queries are politely refused — the assistant cannot
+              speculate about state it cannot verify with a tool call.
             </p>
           </div>
           {PROMPT_LIBRARY.map((group) => (
@@ -156,10 +140,25 @@ export function ChatView(): ReactNode {
   );
 }
 
-function Turn({ turn }: { readonly turn: SeededTurn }): ReactNode {
+function statusLabel(status: ReturnType<typeof useChatStream>["status"]): string {
+  if (status === "streaming") return "streaming…";
+  if (status === "unavailable") return "unavailable · GROQ_API_KEY unset";
+  if (status === "error") return "error";
+  return "ready";
+}
+
+function Turn({
+  turn,
+  streaming,
+}: {
+  readonly turn: ChatTurn;
+  readonly streaming: boolean;
+}): ReactNode {
   const isAssistant = turn.role === "assistant";
   return (
-    <li className={`flex flex-col gap-2 ${isAssistant ? "items-start" : "items-end"}`}>
+    <li
+      className={`flex flex-col gap-2 aegis-fade-in ${isAssistant ? "items-start" : "items-end"}`}
+    >
       <div
         className={`max-w-2xl rounded-aegis-card border px-4 py-3 ${
           isAssistant
@@ -168,19 +167,27 @@ function Turn({ turn }: { readonly turn: SeededTurn }): ReactNode {
         }`}
       >
         <p className="aegis-mono-label mb-2">{isAssistant ? "ASSISTANT" : "YOU"}</p>
-        <p className="text-aegis-sm leading-aegis-normal whitespace-pre-line">{turn.content}</p>
+        <p className="text-aegis-sm leading-aegis-normal whitespace-pre-line">
+          {turn.content || <span className="text-aegis-fg-3">{streaming ? "thinking…" : ""}</span>}
+        </p>
       </div>
-      {isAssistant && turn.tools ? (
+      {isAssistant && turn.tool_calls && turn.tool_calls.length > 0 ? (
         <div className="flex flex-wrap gap-2">
-          {turn.tools.map((tool) => (
+          {turn.tool_calls.map((tool, idx) => (
             <span
-              key={tool.name}
-              className="inline-flex items-center gap-2 rounded-aegis-control border border-aegis-stroke bg-aegis-surface-2 px-2 py-1 aegis-mono text-[10.5px] text-aegis-fg-2"
+              key={`${tool.name}-${idx}`}
+              className={`inline-flex items-center gap-2 rounded-aegis-control border px-2 py-1 aegis-mono text-[10.5px] ${
+                tool.error
+                  ? "border-sev-high/30 bg-sev-high-soft text-sev-high"
+                  : "border-aegis-stroke bg-aegis-surface-2 text-aegis-fg-2"
+              }`}
             >
-              <span className="text-aegis-accent">tool</span>
+              <span className={tool.error ? "text-sev-high" : "text-aegis-accent"}>tool</span>
               <span>{tool.name}</span>
               <span className="text-aegis-fg-3">·</span>
-              <span className="text-aegis-fg-3">{tool.result}</span>
+              <span className="text-aegis-fg-3 max-w-[28ch] truncate">
+                {tool.error ?? tool.result_summary}
+              </span>
             </span>
           ))}
         </div>
@@ -192,30 +199,42 @@ function Turn({ turn }: { readonly turn: SeededTurn }): ReactNode {
 function Composer({
   draft,
   onChange,
+  onSubmit,
+  disabled,
 }: {
   readonly draft: string;
   readonly onChange: (v: string) => void;
+  readonly onSubmit: () => void;
+  readonly disabled: boolean;
 }): ReactNode {
   return (
     <div className="border-t border-aegis-stroke px-6 py-4">
       <form
         onSubmit={(e) => {
           e.preventDefault();
+          onSubmit();
         }}
         className="flex items-end gap-3 rounded-aegis-card border border-aegis-stroke bg-aegis-surface-1 px-3 py-2.5 transition-colors focus-within:border-aegis-accent"
       >
         <textarea
           value={draft}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              onSubmit();
+            }
+          }}
           rows={1}
-          placeholder="Ask the assistant…  (backend lands Phase 8)"
+          placeholder="Ask the assistant…  (⏎ to send, ⇧⏎ for newline)"
           aria-label="Message the assistant"
-          className="flex-1 resize-none bg-transparent text-aegis-sm text-aegis-fg placeholder:text-aegis-fg-3 focus:outline-none"
+          disabled={disabled}
+          className="flex-1 resize-none bg-transparent text-aegis-sm text-aegis-fg placeholder:text-aegis-fg-3 focus:outline-none disabled:opacity-50"
         />
         <Kbd>↵</Kbd>
         <button
           type="submit"
-          disabled
+          disabled={disabled || !draft.trim()}
           className="inline-flex h-8 items-center gap-2 rounded-aegis-control border border-aegis-accent/40 bg-aegis-accent-soft px-3 text-aegis-sm text-aegis-accent disabled:opacity-50"
         >
           send

@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import {
   ActivityFeed,
+  CountUpNumber,
   KPITile,
   ModelCard,
   type ActivityFeedEvent,
@@ -15,6 +16,7 @@ import {
 import { useActivity, useFleetKPIs, useModels } from "../../_lib/hooks";
 import { compactInt, metricValue, relativeTime } from "../../_lib/format";
 import type { ActivityEvent, AegisModel, ModelKPI } from "../../_lib/types";
+import { DemoButton } from "../_components/demo-button";
 
 interface FleetViewProps {
   readonly models: readonly AegisModel[];
@@ -52,33 +54,43 @@ export function FleetView({
 
   return (
     <section className="mx-auto flex w-full max-w-aegis-content flex-col gap-8 px-6 py-8">
-      <header className="flex flex-col gap-2">
-        <p className="aegis-mono-label">FLEET · 24H</p>
-        <h1 className="text-aegis-2xl font-semibold tracking-aegis-tight text-aegis-fg">
-          Fleet overview
-        </h1>
-        <p className="max-w-2xl text-aegis-sm text-aegis-fg-2">
-          Three production models under continuous Aegis governance. Headline metrics, severity
-          rollup, and the live MAPE-K activity stream — everything refreshing in place.
-        </p>
+      <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="flex flex-col gap-2">
+          <p className="aegis-mono-label">FLEET · 24H</p>
+          <h1 className="text-aegis-2xl font-semibold tracking-aegis-tight text-aegis-fg">
+            Fleet overview
+          </h1>
+          <p className="max-w-2xl text-aegis-sm text-aegis-fg-2">
+            Three production models under continuous Aegis governance. Headline metrics, severity
+            rollup, and the live MAPE-K activity stream — everything refreshing in place.
+          </p>
+        </div>
+        <DemoButton />
       </header>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KPITile
           label="Models active"
-          value={totals.activeModels}
+          value={<CountUpNumber to={totals.activeModels} className="aegis-count-up" />}
           unit={`/ ${models.length}`}
           trend={totals.activeModels === models.length ? "all healthy" : "fleet partial"}
           tone={totals.activeModels === models.length ? "ok" : "warning"}
         />
         <KPITile
           label="Predictions · 24h"
-          value={compactInt(totals.predictions)}
+          value={
+            <CountUpNumber
+              to={totals.predictions}
+              format={compactInt}
+              durationMs={900}
+              className="aegis-count-up"
+            />
+          }
           trend={`across ${models.length} models`}
         />
         <KPITile
           label="Open incidents"
-          value={totals.openIncidents}
+          value={<CountUpNumber to={totals.openIncidents} className="aegis-count-up" />}
           trend={totals.openIncidents === 0 ? "clean window" : `${totals.severityHint}`}
           tone={
             totals.openIncidents === 0 ? "ok" : totals.criticalIncidents > 0 ? "danger" : "warning"
