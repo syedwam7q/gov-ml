@@ -213,3 +213,77 @@
     animation: none !important;
   }
 }
+
+/* ──────────── Landing-page motion (used by app/page.tsx) ──────────── */
+
+@layer components {
+  .aegis-fade-in-up {
+    animation: aegis-fade-in-up 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .aegis-drift {
+    animation: aegis-drift 14s ease-in-out infinite;
+  }
+  .aegis-orbit {
+    animation: aegis-orbit 18s linear infinite;
+    transform-origin: center;
+  }
+  .aegis-cta {
+    background: linear-gradient(
+      120deg,
+      var(--aegis-accent-strong) 0%,
+      var(--aegis-accent) 60%,
+      var(--aegis-accent-strong) 100%
+    );
+    background-size: 200% 100%;
+    animation: aegis-sweep 6s ease-in-out infinite;
+  }
+}
+
+@keyframes aegis-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes aegis-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0);
+  }
+}
+
+@keyframes aegis-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes aegis-sweep {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aegis-fade-in-up,
+  .aegis-drift,
+  .aegis-orbit,
+  .aegis-cta {
+    animation: none !important;
+  }
+}

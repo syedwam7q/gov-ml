@@ -18,10 +18,20 @@ import { NextResponse } from "next/server";
  */
 
 const isPublic = createRouteMatcher([
+  // The marketing landing page is the public front door.
   "/",
   "/login(.*)",
+  "/sign-in(.*)",
+  "/sign-up(.*)",
   "/onboarding(.*)",
   "/api/health",
+  // Server-to-server proxies — Clerk session cookies don't apply.
+  // The control plane and assistant authenticate inter-service calls
+  // via HMAC, not Clerk; the dashboard's SSE consumer also needs
+  // anonymous access to /api/cp/stream so the demo theater + activity
+  // feed can subscribe.
+  "/api/cp/(.*)",
+  "/api/assistant/(.*)",
   "/_next/(.*)",
   "/favicon.ico",
   "/.well-known/(.*)",
