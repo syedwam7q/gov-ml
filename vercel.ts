@@ -45,6 +45,9 @@ export const config: VercelConfig = {
     // Mount the control-plane FastAPI app under /api/cp/*. The Vercel
     // Functions Python runtime resolves the handler via services/control-plane.
     { source: "/api/cp/:path*", destination: "/services/control-plane/api/:path*" },
+    // Phase 6 — causal-attrib worker under /api/causal/*. Read by the
+    // control plane (server-side) at CAUSAL_ATTRIB_URL.
+    { source: "/api/causal/:path*", destination: "/services/causal-attrib/api/:path*" },
   ],
   redirects: [],
   headers: [

@@ -303,3 +303,57 @@ If you can scrub through `/incidents/<id>` and watch all six MAPE-K phases again
 | `TINYBIRD_HOST`                    | `https://api.tinybird.co` | Override for EU region or self-hosted gateways                                  |
 | `AEGIS_CONTROL_PLANE_DEV_URL`      | `http://127.0.0.1:8000`   | Where the Next dev rewrite proxies `/api/cp/*` (Phase 5 Task 5)                 |
 | `AEGIS_CONTROL_PLANE_INTERNAL_URL` | (empty)                   | Server-side reachability probe target (production: same-origin via vercel.ts)   |
+
+## Phase 6 — causal root-cause attribution (research extension 1)
+
+After Phase 5 the dashboard reads live data; Phase 6 makes the
+`causal_attribution` JSONB column on `governance_decisions` come from
+a real attribution engine instead of seeded constants. This is the
+first of the two paper-earning research contributions per spec §12.1.
+
+**1. Boot the causal-attrib worker:**
+
+    uv sync --all-packages
+    uv run --package aegis-causal-attrib uvicorn aegis_causal_attrib.app:app --port 8003
+
+Smoke-test:
+
+    curl http://127.0.0.1:8003/healthz
+    # → {"ok": true, "service": "causal-attrib", "version": "0.1.0"}
+
+**2. Run the Apple-Card-2019 scenario test (gold-quality verification):**
+
+    uv run pytest tests/scenarios/test_scenario_apple_card.py -v -m slow
+
+This loads the credit-v1 DAG, runs DoWhy GCM `distribution_change`
+against a co-applicant-shifted current frame, and asserts the full
+pipeline (DAG load → DoWhy → recommend_action) produces a valid
+`CausalAttribution`-shaped output with the dominant cause in the
+upstream-of-target ancestor set.
+
+**3. Run the Phase 6 paper-claim test (CI-merge-blocking):**
+
+    uv run pytest services/causal-attrib/tests/test_shapley_efficiency.py -v
+
+Asserts Σ φ_i ≈ v(N) − v(∅) within Monte-Carlo tolerance — the
+load-bearing efficiency identity from Edakunni et al. 2024.
+
+**4. Wire the control plane to the worker** (one-time per dev machine):
+
+    export CAUSAL_ATTRIB_URL=http://127.0.0.1:8003
+
+The control plane's analyze-state transition will then call
+`POST /attrib/run` whenever a `GovernanceDecision` advances from
+`detected` to `analyzed` _and_ the caller didn't supply an explicit
+payload. The detection service attaches `reference_rows` and
+`current_rows` to the decision's `drift_signal` so causal-attrib
+has the data it needs.
+
+**Configuration knobs (Phase 6 additions):**
+
+| Var                 | Default                 | Purpose                                                                        |
+| ------------------- | ----------------------- | ------------------------------------------------------------------------------ |
+| `CAUSAL_ATTRIB_URL` | `http://localhost:8003` | Where the control plane reaches services/causal-attrib                         |
+| `ATTRIB_TIMEOUT_S`  | `30.0`                  | Hard timeout per DoWhy GCM call (spec §12.1)                                   |
+| `DBSHAP_SAMPLES`    | `2048`                  | Monte-Carlo permutation budget for the DBShap fallback                         |
+| `CAUSAL_CACHE_SIZE` | `64`                    | In-process cache size keyed by (model_id, target, ref_fp, cur_fp, num_samples) |
