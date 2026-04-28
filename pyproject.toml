@@ -123,7 +123,12 @@ testpaths = [
   "services/control-plane/tests",
   "services/detect-tabular/tests",
   "services/detect-text/tests",
+  "services/causal-attrib/tests",
   "tests",
 ]
-addopts = "-ra --strict-markers --strict-config --import-mode=importlib"
+addopts = "-ra --strict-markers --strict-config --import-mode=importlib -m 'not slow'"
 asyncio_mode = "auto"
+markers = [
+  "slow: tests that take >5s (DoWhy GCM, full scenario walks) — opt in with -m slow",
+  "db: requires DATABASE_URL (Postgres integration tests)",
+]
