@@ -12,6 +12,7 @@ members = [
   "packages/shared-py",
   "ml-pipelines/_shared",
   "services/control-plane",
+  "services/detect-tabular",
 ]
 
 [tool.uv]
@@ -66,6 +67,7 @@ include = [
   "packages/shared-py/src",
   "ml-pipelines/_shared/src",
   "services/control-plane/src",
+  "services/detect-tabular/src",
 ]
 exclude = ["**/.venv", "**/__pycache__", "**/node_modules"]
 
@@ -92,6 +94,7 @@ testpaths = [
   "ml-pipelines/readmission/tests",
   "ml-pipelines/toxicity/tests",
   "services/control-plane/tests",
+  "services/detect-tabular/tests",
   "tests",
 ]
 addopts = "-ra --strict-markers --strict-config --import-mode=importlib"
