@@ -9,13 +9,29 @@ from aegis_shared.audit import (
     verify_chain,
     verify_signature,
 )
+from aegis_shared.schemas import (
+    AegisModel,
+    Approval,
+    DriftSignal,
+    GovernanceDecision,
+    Model,
+    ModelVersion,
+    Policy,
+)
 from aegis_shared.types import DecisionState, ModelFamily, RiskClass, Role, Severity
 
 __all__ = [
     "GENESIS_PREV_HASH",
+    "AegisModel",
+    "Approval",
     "AuditRow",
     "DecisionState",
+    "DriftSignal",
+    "GovernanceDecision",
+    "Model",
     "ModelFamily",
+    "ModelVersion",
+    "Policy",
     "RiskClass",
     "Role",
     "Severity",
