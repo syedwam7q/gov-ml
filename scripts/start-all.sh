@@ -126,14 +126,14 @@ if [ "$WANT_CP" = "1" ]; then
   spawn "cp" "$COLOR_CP" \
     uv run --package aegis-control-plane \
     uvicorn aegis_control_plane.app:app --port 8000 --reload \
-    --reload-include='*.py' --reload-include='*.env'
+    --reload-include='*.py' --reload-include='.env' --reload-include='.env.local'
 fi
 
 if [ "$WANT_ASSISTANT" = "1" ]; then
   spawn "assistant" "$COLOR_ASSISTANT" \
     uv run --package aegis-assistant \
     uvicorn aegis_assistant.app:app --port 8005 --reload \
-    --reload-include='*.py' --reload-include='*.env'
+    --reload-include='*.py' --reload-include='.env' --reload-include='.env.local'
 fi
 
 if [ "$WANT_DASHBOARD" = "1" ]; then

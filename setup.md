@@ -414,9 +414,10 @@ Variants:
     pnpm start:cp-and-assistant   # Skip the dashboard (pure backend dev)
     pnpm start:assistant-only     # Just the assistant + dashboard talks to a remote control plane
 
-The script also adds `--reload-include='*.env'` to both Python services
-so rotating `GROQ_API_KEY` in `.env` picks up automatically without a
-manual kill-and-restart.
+The script also adds `--reload-include='.env'` (literal, not the
+glob `*.env` which doesn't match dotfiles) to both Python services
+so rotating `GROQ_API_KEY` in `.env` picks up automatically without
+a manual kill-and-restart.
 
 The per-service boot recipes below stay valid — use them when you want
 to iterate on one service in isolation with a debugger attached.
@@ -441,19 +442,22 @@ both consume its SSE endpoint.
     uv sync --all-packages
     uv run --package aegis-assistant uvicorn aegis_assistant.app:app \
         --port 8005 --reload \
-        --reload-include='*.py' --reload-include='*.env'
+        --reload-include='*.py' --reload-include='.env' \
+        --reload-include='.env.local'
 
 Smoke-test:
 
     curl http://127.0.0.1:8005/healthz
     # → {"ok": true, "service": "assistant", "version": "0.1.0"}
 
-**Why `--reload-include='*.env'`:** `pydantic-settings` reads
+**Why the explicit `.env` includes:** `pydantic-settings` reads
 `GROQ_API_KEY` from `.env` once at app boot. uvicorn's `--reload`
 default only watches `*.py`, so rotating the key in `.env` had no
-effect until the operator manually killed and restarted. Adding the
-`.env` glob to the reload watcher means a key edit triggers an app
-reload within ~1 second.
+effect until the operator manually killed and restarted. Glob
+`*.env` does NOT match `.env` (the leading dot makes it hidden by
+default), which is why we list `.env` and `.env.local` literally.
+With these in place, a key edit triggers an app reload within ~1
+second.
 
 **2. Wire the dashboard:**
 
