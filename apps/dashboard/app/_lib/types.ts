@@ -1,38 +1,54 @@
 /**
  * Aegis dashboard — frontend type contracts.
  *
- * These mirror the Pydantic schemas in `packages/shared-py/src/aegis_shared/schemas.py`.
- * The auto-generated `@aegis/shared-ts` package only ships `AuditRow` today;
- * once the JSON-Schema export pipeline lands in Phase 5, this file is replaced
- * by re-exports from `@aegis/shared-ts`.
+ * Two layers of types live here:
  *
- * Spec §6.1 (Postgres schema) + §10.1 (per-route data needs).
+ *   1. **Atomic types from `@aegis/shared-ts`** (enums + the audit row).
+ *      These are auto-generated from `packages/shared-py/src/aegis_shared/`
+ *      and are the cross-service contract — every service in the platform
+ *      agrees on `Severity`, `DecisionState`, `RiskClass`, `Role`,
+ *      `ModelFamily`, and `AuditRow`. We re-export them under their
+ *      dashboard-friendly aliases.
+ *
+ *   2. **UI composite types defined here** (`AegisModel`, `ModelKPI`,
+ *      `GovernanceDecision`, `ActivityEvent`, `Dataset`, `ComplianceMapping`,
+ *      ...). These are the shapes the dashboard renders — richer than the
+ *      Pydantic DB models because they bundle DB rows with Tinybird-derived
+ *      sparklines, headline KPIs, and UI-only enrichments. The backend's
+ *      router handlers compose responses to match these shapes.
+ *
+ * Spec §4.4.2 ("schema is law") applies to layer 1 — drift there breaks
+ * CI. Layer 2 evolves with the UI; the backend keeps up by adapting at
+ * the router boundary.
  */
 
-// ──────────── Enums (mirror packages/shared-py/types.py) ────────────
+import type {
+  AuditRow as SharedAuditRow,
+  DecisionState as SharedDecisionState,
+  ModelFamily as SharedModelFamily,
+  RiskClass as SharedRiskClass,
+  Role as SharedRole,
+  Severity as SharedSeverity,
+} from "@aegis/shared-ts";
 
-export type Severity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+// ──────────── Atomic types from @aegis/shared-ts (auto-generated) ────────────
 
+export type Severity = SharedSeverity;
+export type DecisionStateName = SharedDecisionState;
+export type RiskClass = SharedRiskClass;
+export type ModelFamily = SharedModelFamily;
+export type Role = SharedRole;
+
+/** AuditRow shape — exact mirror of the Pydantic model. */
+export type AuditRow = SharedAuditRow;
+
+/** Severity ordering used by sort helpers. */
 export const SEVERITY_RANK: Record<Severity, number> = {
   LOW: 0,
   MEDIUM: 1,
   HIGH: 2,
   CRITICAL: 3,
 };
-
-export type DecisionStateName =
-  | "detected"
-  | "analyzed"
-  | "planned"
-  | "awaiting_approval"
-  | "executing"
-  | "evaluated";
-
-export type RiskClass = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
-
-export type ModelFamily = "tabular" | "text";
-
-export type Role = "viewer" | "operator" | "admin";
 
 // ──────────── Models registry ────────────
 
@@ -66,7 +82,7 @@ export interface ModelVersion {
   readonly traffic_share?: number;
 }
 
-// ──────────── KPIs ────────────
+// ──────────── KPIs (composite — DB row + Tinybird trend + UI rollups) ────────
 
 /** A single time-series point. */
 export interface KPIPoint {
@@ -189,17 +205,19 @@ export interface ApprovalRecord {
   readonly justification?: string;
 }
 
-// ──────────── Audit log ────────────
+// ──────────── Audit log paging + chain verification ────────────
 
-export interface AuditRow {
-  readonly sequence_n: number;
-  readonly ts: string;
-  readonly actor: string;
-  readonly action: string;
-  readonly payload: Record<string, unknown>;
-  readonly prev_hash: string;
-  readonly row_hash: string;
-  readonly signature: string;
+export interface AuditPage {
+  readonly rows: readonly AuditRow[];
+  readonly next_since_seq?: number | null;
+  readonly total: number;
+}
+
+export interface ChainVerificationResult {
+  readonly valid: boolean;
+  readonly rows_checked: number;
+  readonly head_row_hash?: string | null;
+  readonly first_failed_sequence?: number | null;
 }
 
 // ──────────── Activity feed ────────────
