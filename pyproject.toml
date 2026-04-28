@@ -16,6 +16,7 @@ members = [
   "services/detect-text",
   "services/causal-attrib",
   "services/action-selector",
+  "services/assistant",
 ]
 
 [tool.uv]
@@ -126,6 +127,7 @@ testpaths = [
   "services/detect-text/tests",
   "services/causal-attrib/tests",
   "services/action-selector/tests",
+  "services/assistant/tests",
   "tests",
 ]
 addopts = "-ra --strict-markers --strict-config --import-mode=importlib -m 'not slow'"
