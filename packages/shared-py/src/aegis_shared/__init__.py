@@ -18,10 +18,16 @@ from aegis_shared.schemas import (
     ModelVersion,
     Policy,
 )
+from aegis_shared.tinybird_client import (
+    TINYBIRD_API_BASE,
+    TinybirdClient,
+    TinybirdError,
+)
 from aegis_shared.types import DecisionState, ModelFamily, RiskClass, Role, Severity
 
 __all__ = [
     "GENESIS_PREV_HASH",
+    "TINYBIRD_API_BASE",
     "AegisModel",
     "Approval",
     "AuditRow",
@@ -35,6 +41,8 @@ __all__ = [
     "RiskClass",
     "Role",
     "Severity",
+    "TinybirdClient",
+    "TinybirdError",
     "canonicalize_payload",
     "compute_row_hash",
     "sign_row",
