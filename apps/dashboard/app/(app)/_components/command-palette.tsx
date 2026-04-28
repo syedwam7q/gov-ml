@@ -101,10 +101,10 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps): ReactNod
     >
       <div
         aria-hidden
-        className="absolute inset-0 bg-aegis-bg/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-aegis-bg/95 backdrop-blur-md"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-xl rounded-aegis-card border border-aegis-stroke-strong bg-aegis-surface-2 shadow-2xl">
+      <div className="relative w-full max-w-xl rounded-aegis-card border border-aegis-stroke-strong bg-aegis-surface-overlay shadow-2xl">
         <div className="flex items-center gap-3 border-b border-aegis-stroke px-4">
           <span className="text-aegis-fg-3" aria-hidden>
             <SearchIcon />

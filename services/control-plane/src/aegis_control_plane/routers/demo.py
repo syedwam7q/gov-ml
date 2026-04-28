@@ -152,18 +152,30 @@ APPLE_CARD_SCENARIO: dict[str, Any] = {
 }
 
 
-# Choreography timing — total elapsed ≈ 7.5 seconds. Tuned for panel
+# Choreography timing — total elapsed ≈ 8.5 seconds. Tuned for panel
 # delivery: long enough that judges read each scene, short enough that
 # the punchline lands before attention drifts.
+#
+# The first delay is a deliberate ~1.0s "settle" that lets the
+# dashboard's EventSource attach to /api/cp/stream after the POST
+# returns — without it, demo_started races the SSE subscription and
+# the theater renders frozen on the briefing scene.
 _CHOREOGRAPHY: tuple[tuple[str, float], ...] = (
-    ("demo_started", 0.0),
-    ("demo_drift_signal", 0.6),
+    ("demo_started", 1.0),
+    ("demo_drift_signal", 1.0),
     ("demo_causal_attribution", 1.6),
     ("demo_pareto_front", 1.6),
     ("demo_action_executed", 1.5),
     ("demo_audit_extended", 1.0),
     ("demo_complete", 0.6),
 )
+
+
+# Strong-reference set for in-flight choreography tasks. Without this
+# Python's GC can collect a Task whose only reference is the loop's
+# weak set (PEP 654 / asyncio docs warn about this). Tasks remove
+# themselves on completion via `add_done_callback(...)`.
+_PENDING_DEMO_TASKS: set[asyncio.Task[None]] = set()
 
 
 def _build_event(*, kind: str, demo_id: str, scenario: dict[str, Any]) -> StreamEvent:
@@ -249,7 +261,12 @@ async def replay_apple_card(
     background — disconnecting the HTTP request does not abort it.
     """
     demo_id = uuid.uuid4().hex
-    asyncio.create_task(_run_choreography(demo_id=demo_id, bus=bus))
+    task = asyncio.create_task(_run_choreography(demo_id=demo_id, bus=bus))
+    # Hold a strong reference — without this, garbage collection can
+    # cancel the task between the request returning and the first
+    # `await asyncio.sleep(...)` boundary inside the choreography.
+    _PENDING_DEMO_TASKS.add(task)
+    task.add_done_callback(_PENDING_DEMO_TASKS.discard)
     return {
         "demo_id": demo_id,
         "scenario": "apple_card_2019",

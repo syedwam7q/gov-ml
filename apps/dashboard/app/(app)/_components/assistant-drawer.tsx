@@ -105,14 +105,14 @@ export function AssistantDrawer({ open, onClose }: AssistantDrawerProps): ReactN
     >
       <div
         aria-hidden
-        className={`absolute inset-0 bg-aegis-bg/60 transition-opacity duration-aegis-base ease-aegis ${
+        className={`absolute inset-0 bg-aegis-bg/85 backdrop-blur-sm transition-opacity duration-aegis-base ease-aegis ${
           open ? "pointer-events-auto opacity-100" : "opacity-0"
         }`}
         onClick={onClose}
       />
 
       <aside
-        className={`pointer-events-auto absolute right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-aegis-stroke bg-aegis-surface-1 transition-transform duration-aegis-base ease-aegis ${
+        className={`pointer-events-auto absolute right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-aegis-stroke-strong bg-aegis-surface-overlay shadow-2xl transition-transform duration-aegis-base ease-aegis ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >

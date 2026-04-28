@@ -9,6 +9,7 @@ import pytest
 from aegis_control_plane.app import build_app
 from aegis_control_plane.routers.demo import (
     _CHOREOGRAPHY,
+    _PENDING_DEMO_TASKS,
     APPLE_CARD_SCENARIO,
     _build_event,
 )
@@ -88,3 +89,34 @@ def test_apple_card_scenario_payloads_are_self_consistent() -> None:
 def test_build_event_rejects_unknown_kind() -> None:
     with pytest.raises(ValueError, match="unknown demo event"):
         _build_event(kind="not_real", demo_id="x", scenario=APPLE_CARD_SCENARIO)
+
+
+@pytest.mark.asyncio
+async def test_choreography_task_is_strong_referenced() -> None:
+    """Without a strong reference Python's GC can cancel the task
+    between the response returning and the first `await asyncio.sleep`
+    boundary, leaving the dashboard frozen on the briefing scene.
+    Regression guard for that exact bug."""
+    app = build_app()
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        res = await client.post("/api/cp/internal/demo/apple-card")
+    assert res.status_code == 202
+    # Right after the response, the task must be tracked.
+    assert len(_PENDING_DEMO_TASKS) >= 1
+    pending = next(iter(_PENDING_DEMO_TASKS))
+    assert not pending.done()
+
+
+@pytest.mark.asyncio
+async def test_first_choreography_event_is_delayed_for_subscribers() -> None:
+    """The first event must not fire at t=0 — the dashboard's
+    EventSource needs a settle window after the POST returns to
+    attach to /api/cp/stream before the briefing event lands."""
+    first_kind, first_delay = _CHOREOGRAPHY[0]
+    assert first_kind == "demo_started"
+    assert first_delay >= 0.5, (
+        "first event delay must allow the SSE subscriber to attach; "
+        "anything below ~0.5s races the EventSource handshake on slow "
+        "browsers (especially Safari)."
+    )

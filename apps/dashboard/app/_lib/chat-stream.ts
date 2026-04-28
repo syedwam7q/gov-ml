@@ -182,7 +182,7 @@ export function useChatStream(): ChatStreamHook {
               }),
             );
           } else if (frame.kind === "error") {
-            assistantText = frame.text;
+            assistantText = friendlyAssistantError(frame.text);
             setTurns((prev) =>
               replaceLastAssistant(prev, {
                 role: "assistant",
@@ -190,7 +190,7 @@ export function useChatStream(): ChatStreamHook {
                 tool_calls: [...collectedToolCalls],
               }),
             );
-            setStatus("error");
+            setStatus(isUnavailableError(frame.text) ? "unavailable" : "error");
             return;
           }
           // tool_call_start frames are intentionally not surfaced as
@@ -212,4 +212,30 @@ function replaceLastAssistant(prev: readonly ChatTurn[], next: ChatTurn): readon
   const last = prev[prev.length - 1];
   if (last?.role !== "assistant") return [...prev, next];
   return [...prev.slice(0, -1), next];
+}
+
+/**
+ * Translate raw Groq SDK error text into operator-friendly copy.
+ * Groq's 401 messages contain the literal string "expired_api_key" or
+ * "invalid_api_key"; we detect those and replace the noisy stack with
+ * a one-liner that tells the operator exactly what to fix.
+ */
+function friendlyAssistantError(raw: string): string {
+  if (/expired_api_key/i.test(raw)) {
+    return "Governance Assistant unavailable — the GROQ_API_KEY has expired. Rotate the key in the assistant service environment, then retry.";
+  }
+  if (/invalid api key|invalid_api_key/i.test(raw)) {
+    return "Governance Assistant unavailable — GROQ_API_KEY is invalid. Set a working key in the assistant service environment, then retry.";
+  }
+  if (/AuthenticationError|401/i.test(raw)) {
+    return "Governance Assistant unavailable — Groq rejected the API key. Set a working key, then retry.";
+  }
+  if (/RateLimitError|429/i.test(raw)) {
+    return "Governance Assistant rate-limited by Groq. Wait a moment and retry.";
+  }
+  return raw;
+}
+
+function isUnavailableError(raw: string): boolean {
+  return /api_key|AuthenticationError|401|GROQ_API_KEY/i.test(raw);
 }

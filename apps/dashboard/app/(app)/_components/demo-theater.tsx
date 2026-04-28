@@ -152,7 +152,7 @@ export function DemoTheater({ open, demoId, onClose, onComplete }: DemoTheaterPr
       role="dialog"
       aria-modal
       aria-label="Apple Card 2019 demo"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-aegis-bg/80 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-aegis-bg/95 backdrop-blur-md"
     >
       <button
         type="button"
@@ -161,7 +161,7 @@ export function DemoTheater({ open, demoId, onClose, onComplete }: DemoTheaterPr
         onClick={onClose}
         tabIndex={-1}
       />
-      <div className="relative z-10 mx-4 flex h-[min(800px,92vh)] w-[min(1100px,95vw)] flex-col overflow-hidden rounded-aegis-card border border-aegis-stroke bg-aegis-surface-1 shadow-2xl">
+      <div className="relative z-10 mx-4 flex h-[min(800px,92vh)] w-[min(1100px,95vw)] flex-col overflow-hidden rounded-aegis-card border border-aegis-stroke-strong bg-aegis-surface-overlay shadow-2xl">
         <DemoHeader onClose={onClose} activeScene={activeScene} />
         <DemoStage scenes={scenes} activeScene={activeScene} demoId={demoId} />
         <DemoProgressBar activeIndex={progressIndex} />

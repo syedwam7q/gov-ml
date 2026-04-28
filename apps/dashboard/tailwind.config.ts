@@ -19,6 +19,8 @@ const config: Config = {
         "aegis-surface-1": "var(--aegis-surface-1)",
         "aegis-surface-2": "var(--aegis-surface-2)",
         "aegis-surface-3": "var(--aegis-surface-3)",
+        "aegis-surface-overlay": "var(--aegis-surface-overlay)",
+        "aegis-surface-overlay-elevated": "var(--aegis-surface-overlay-elevated)",
         "aegis-stroke": "var(--aegis-stroke)",
         "aegis-stroke-strong": "var(--aegis-stroke-strong)",
         "aegis-fg": "var(--aegis-fg-primary)",

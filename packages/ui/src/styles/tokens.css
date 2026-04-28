@@ -18,6 +18,15 @@
   --aegis-surface-2: rgba(255, 255, 255, 0.04); /* nested elevation */
   --aegis-surface-3: rgba(255, 255, 255, 0.06); /* drawers, modals, popovers */
 
+  /* Opaque overlay surface — used for floating panels (drawers,
+   * modals, command palettes, demo theater) where the page behind
+   * must NOT bleed through. Structurally one notch above
+   * surface-0 so the panel reads as elevated. The translucent
+   * surface-3 stays the right choice for nested cards INSIDE the
+   * overlay; surface-overlay is the panel chrome itself. */
+  --aegis-surface-overlay: #14141a;
+  --aegis-surface-overlay-elevated: #1c1c24;
+
   /* ──────────────── Strokes ──────────────── */
   --aegis-stroke: rgba(255, 255, 255, 0.08); /* every border on every panel */
   --aegis-stroke-strong: rgba(255, 255, 255, 0.16); /* focus rings, dividers */
