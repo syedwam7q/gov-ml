@@ -69,34 +69,81 @@ export class ApiError extends Error {
 }
 
 /**
+ * Resolve the full URL for a backend call.
+ *
+ * In the browser we use the relative path — Vercel rewrites it to the
+ * control plane in production and Next dev proxies it locally. On the
+ * server (RSC, Server Actions) `fetch` requires an absolute URL, so we
+ * read the same env var the reachability probe uses
+ * (`AEGIS_CONTROL_PLANE_INTERNAL_URL`) with `AEGIS_CONTROL_PLANE_DEV_URL`
+ * as a fallback for local dev.
+ */
+function fetchUrl(path: string): string {
+  if (typeof window !== "undefined") {
+    return `${PREFIX}${path}`;
+  }
+
+  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
+    ?.env;
+  const base =
+    env?.AEGIS_CONTROL_PLANE_INTERNAL_URL ??
+    env?.AEGIS_CONTROL_PLANE_DEV_URL ??
+    "http://127.0.0.1:8000";
+  return `${base.replace(/\/$/, "")}${PREFIX}${path}`;
+}
+
+/**
  * Fetch JSON from the live backend or fall back to the supplied fixture.
- * The fallback is invoked lazily so we don't materialise it on every call.
+ *
+ * Mode-flip discipline: only **network-level** failures (TCP refused,
+ * DNS, abort, JSON parse on a non-JSON body) flip the global apiMode
+ * to "fallback". A specific endpoint returning HTTP 4xx / 5xx — e.g.
+ * `/api/cp/fleet/kpi` returning 503 because TINYBIRD_TOKEN is unset —
+ * is transient: that single call gets the fixture, but subsequent calls
+ * to other endpoints still try the live backend. Without this
+ * distinction one bad endpoint silently demoted the whole dashboard
+ * to fallback mode.
  */
 async function fetchLiveOrFallback<T>(
   path: string,
   fallback: () => T,
   init?: RequestInit,
 ): Promise<T> {
-  // Once we've concluded the backend is down for this session, skip the
-  // live fetch entirely — repeat failures would just slow every page.
   if (apiMode === "fallback") {
     return fallback();
   }
+  let res: Response;
   try {
-    const res = await fetch(`${PREFIX}${path}`, {
+    res = await fetch(fetchUrl(path), {
       ...init,
       headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
       cache: "no-store",
     });
-    if (!res.ok) {
-      throw new ApiError(`Aegis API ${path} → HTTP ${res.status}`, res.status);
-    }
-    if (apiMode === "pending") apiMode = "live";
-    return (await res.json()) as T;
   } catch (err) {
     apiMode = "fallback";
     if (typeof console !== "undefined") {
-      console.warn(`[aegis] ${path} → falling back to seeded fixtures`, err);
+      console.warn(`[aegis] ${path} → network error, falling back to fixtures`, err);
+    }
+    return fallback();
+  }
+
+  if (!res.ok) {
+    if (typeof console !== "undefined") {
+      console.warn(
+        `[aegis] ${path} → HTTP ${res.status}, this call falls back; mode stays ${apiMode}`,
+      );
+    }
+    return fallback();
+  }
+
+  try {
+    const json = (await res.json()) as T;
+    if (apiMode === "pending") apiMode = "live";
+    return json;
+  } catch (err) {
+    apiMode = "fallback";
+    if (typeof console !== "undefined") {
+      console.warn(`[aegis] ${path} → invalid JSON body, falling back to fixtures`, err);
     }
     return fallback();
   }
@@ -174,7 +221,7 @@ export async function transitionDecision(
   id: string,
   body: TransitionInput,
 ): Promise<GovernanceDecision> {
-  const res = await fetch(`${PREFIX}/decisions/${encodeURIComponent(id)}/transition`, {
+  const res = await fetch(fetchUrl(`/decisions/${encodeURIComponent(id)}/transition`), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

@@ -192,3 +192,28 @@ class ActionHistoryRow(Base):
     action: Mapped[str] = mapped_column(Text(), nullable=False)
     reward: Mapped[dict[str, float] | None] = mapped_column(JSON())
     observed_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+
+
+class DatasetRow(Base):
+    """`datasets` — the platform's training-data registry.
+
+    Mirrors the `Dataset` shape in `apps/dashboard/app/_lib/types.ts` so
+    the `/api/cp/datasets` router can project a row directly to JSON.
+    """
+
+    __tablename__ = "datasets"
+
+    id: Mapped[str] = mapped_column(Text(), primary_key=True)
+    name: Mapped[str] = mapped_column(Text(), nullable=False)
+    description: Mapped[str] = mapped_column(Text(), nullable=False)
+    source: Mapped[str] = mapped_column(Text(), nullable=False)
+    source_url: Mapped[str] = mapped_column(Text(), nullable=False)
+    row_count: Mapped[int] = mapped_column(BigInteger(), nullable=False)
+    snapshot_id: Mapped[str] = mapped_column(Text(), nullable=False)
+    model_ids: Mapped[list[str]] = mapped_column(JSON(), nullable=False, default=list)
+    datasheet: Mapped[dict[str, Any] | None] = mapped_column(JSON(), nullable=True)
+    snapshots: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON(), nullable=True)
+    schema_overview: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON(), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, server_default=func.now()
+    )

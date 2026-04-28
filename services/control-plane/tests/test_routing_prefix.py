@@ -20,6 +20,11 @@ REQUIRED_PUBLIC_PREFIXES = (
     "/api/cp/signals",
     "/api/cp/stream",
     "/api/cp/internal",  # broadcast + cron handlers
+    "/api/cp/datasets",
+    "/api/cp/compliance",
+    "/api/cp/reachability",
+    "/api/cp/fleet",
+    "/api/cp/activity",
 )
 
 # These platform-level endpoints stay at root and must not move.

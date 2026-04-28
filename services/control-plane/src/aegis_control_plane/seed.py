@@ -31,7 +31,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from aegis_control_plane.audit_writer import append_audit_row
+from aegis_control_plane.dataset_data import SEEDED_DATASETS
 from aegis_control_plane.orm import (
+    DatasetRow,
     GovernanceDecisionRow,
     ModelRow,
     PolicyRow,
@@ -237,19 +239,66 @@ async def seed_hero_scenario(session: AsyncSession) -> bool:
 
     Returns True if seeding ran (something was inserted), False if the
     scenario was already present and nothing changed.
+
+    Side-effect: also seeds the dataset registry (`seed_datasets`) so
+    `/api/cp/datasets` has the three real-world corpora available even
+    when a deployment doesn't run a separate seed step.
     """
     existing = await session.get(GovernanceDecisionRow, HERO_DECISION_ID)
     if existing is not None:
         logger.debug("hero scenario already seeded; skipping")
+        # Still try to seed datasets — they're managed independently and
+        # may need backfilling on an existing deployment.
+        await seed_datasets(session)
         return False
 
     await _ensure_models(session)
     await _ensure_hero_policy(session)
     await _insert_hero_decision(session)
     await _append_hero_audit_chain(session)
+    await seed_datasets(session)
     await session.commit()
     logger.info("seeded hero scenario · decision=%s · 6 audit rows appended", HERO_DECISION_ID)
     return True
+
+
+async def seed_datasets(session: AsyncSession) -> int:
+    """Idempotently seed the three real-world datasets from spec Appendix A.
+
+    Returns the count of rows newly inserted (0 if everything was already
+    present). Safe to call standalone — `seed_hero_scenario` calls it as
+    a side-effect, but ops scripts can also invoke it directly to backfill
+    the registry on an existing deployment.
+    """
+    existing_ids: set[str] = {
+        row[0] for row in (await session.execute(select(DatasetRow.id))).all()
+    }
+    inserted = 0
+    for spec in SEEDED_DATASETS:
+        if spec["id"] in existing_ids:
+            continue
+        # `schema_overview` is the column name; the spec dict uses `schema_overview`
+        # already (no rename needed). model_ids stays a JSON list.
+        session.add(
+            DatasetRow(
+                id=spec["id"],
+                name=spec["name"],
+                description=spec["description"],
+                source=spec["source"],
+                source_url=spec["source_url"],
+                row_count=spec["row_count"],
+                snapshot_id=spec["snapshot_id"],
+                model_ids=list(spec["model_ids"]),
+                datasheet=spec.get("datasheet"),
+                snapshots=spec.get("snapshots"),
+                schema_overview=spec.get("schema_overview"),
+            )
+        )
+        inserted += 1
+    if inserted:
+        await session.flush()
+        logger.info("seeded %d dataset(s) into the registry", inserted)
+    return inserted
 
 
 # ──────────── Internals ────────────
