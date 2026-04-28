@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import (
 from aegis_control_plane.config import get_settings
 
 
-def _normalise_async_postgres_url(url: str) -> str:
+def normalise_async_postgres_url(url: str) -> str:
     """SQLAlchemy needs `postgresql+asyncpg://...` for async. Operators
     typically paste a plain `postgresql://...` from their cloud provider
     (Neon, Supabase, RDS), which defaults to the psycopg2 sync driver
@@ -49,7 +49,7 @@ def make_engine(url: str | None = None) -> AsyncEngine:
     if not target_url:
         msg = "DATABASE_URL is not configured"
         raise RuntimeError(msg)
-    target_url = _normalise_async_postgres_url(target_url)
+    target_url = normalise_async_postgres_url(target_url)
     return create_async_engine(target_url, pool_pre_ping=True, future=True)
 
 

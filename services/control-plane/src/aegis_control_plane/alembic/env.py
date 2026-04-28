@@ -1,4 +1,13 @@
-"""Alembic environment — async SQLAlchemy engine, DATABASE_URL from env."""
+"""Alembic environment — async SQLAlchemy engine, DATABASE_URL from env.
+
+Operators paste a plain `postgresql://...` URL from their cloud
+provider (Neon / Supabase / RDS). Without normalisation, SQLAlchemy
+defaults to the sync psycopg2 driver — and we only ship asyncpg, so
+alembic crashes with `InvalidRequestError: The asyncio extension
+requires an async driver`. We share the same `normalise_async_postgres_url`
+helper used at runtime in `aegis_control_plane.db` so `alembic upgrade
+head` and the live app see the exact same URL transformation.
+"""
 
 from __future__ import annotations
 
@@ -6,6 +15,7 @@ import asyncio
 import os
 from logging.config import fileConfig
 
+from aegis_control_plane.db import normalise_async_postgres_url
 from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
@@ -17,7 +27,8 @@ if config.config_file_name is not None:
 
 
 def _get_url() -> str:
-    return os.environ.get("DATABASE_URL", "postgresql+asyncpg://localhost/aegis_dev")
+    raw = os.environ.get("DATABASE_URL", "postgresql+asyncpg://localhost/aegis_dev")
+    return normalise_async_postgres_url(raw)
 
 
 def run_migrations_offline() -> None:

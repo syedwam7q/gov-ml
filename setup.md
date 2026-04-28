@@ -20,24 +20,13 @@ cp .env.example .env
 # gracefully when they're missing.
 
 # 3) Migrate + seed Postgres
-cd services/control-plane
-set -a && source ../../.env && set +a
-DATABASE_URL="$DATABASE_URL" uv run alembic upgrade head
-cd ../..
-uv run --package aegis-control-plane python -c "
-import asyncio
-from aegis_control_plane.db import make_engine, make_session_factory
-from aegis_control_plane.seed import seed_hero_scenario, seed_datasets
-async def main():
-    engine = make_engine()
-    factory = make_session_factory(engine)
-    async with factory() as s:
-        await seed_hero_scenario(s)
-        await seed_datasets(s)
-        await s.commit()
-    await engine.dispose()
-asyncio.run(main())
-"
+#    `set -a; source .env; set +a` exports every var in .env into the
+#    shell so alembic + the seeder see DATABASE_URL. Alembic's env.py
+#    auto-rewrites postgresql:// → postgresql+asyncpg:// at load time,
+#    so a plain provider URL works as-is.
+set -a && source .env && set +a
+(cd services/control-plane && uv run alembic upgrade head)
+uv run --package aegis-control-plane python -m aegis_control_plane.seed_cli
 
 # 4) Boot the whole stack — control-plane + assistant + dashboard, one terminal
 pnpm start:all
