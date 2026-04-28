@@ -58,11 +58,31 @@ indent-style = "space"
 [tool.pyright]
 pythonVersion = "3.13"
 typeCheckingMode = "strict"
-include = ["packages/shared-py/src", "services"]
+include = ["packages/shared-py/src", "ml-pipelines/_shared/src", "services"]
 exclude = ["**/.venv", "**/__pycache__", "**/node_modules"]
+
+# ml-pipelines code wraps sklearn / pandas / xgboost which don't ship strict
+# type stubs. We keep ruff-level discipline (annotations, no `any`) but relax
+# pyright's strict-mode demands here. Production services in `services/` and
+# the shared schemas in `packages/shared-py/` remain strict.
+[[tool.pyright.executionEnvironments]]
+root = "ml-pipelines"
+reportMissingTypeStubs = "none"
+reportUnknownVariableType = "none"
+reportUnknownMemberType = "none"
+reportUnknownArgumentType = "none"
+reportUnknownParameterType = "none"
+reportUnknownLambdaType = "none"
+reportMissingTypeArgument = "none"
 
 [tool.pytest.ini_options]
 minversion = "8.0"
-testpaths = ["packages/shared-py/tests", "services", "tests"]
+testpaths = [
+  "packages/shared-py/tests",
+  "ml-pipelines/_shared/tests",
+  "ml-pipelines/credit/tests",
+  "services",
+  "tests",
+]
 addopts = "-ra --strict-markers --strict-config"
 asyncio_mode = "auto"

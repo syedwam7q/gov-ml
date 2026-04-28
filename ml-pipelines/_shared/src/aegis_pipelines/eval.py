@@ -65,12 +65,16 @@ def expected_calibration_error(
 def binary_classification_metrics(
     *, y_true: np.ndarray, y_pred: np.ndarray, y_prob: np.ndarray
 ) -> dict[str, float]:
-    """Standard binary-classification metrics + Brier + ECE."""
+    """Standard binary-classification metrics + Brier + ECE.
+
+    `zero_division=0` is well-supported by sklearn at runtime even though its
+    type stubs only declare `str`; we silence pyright on those three lines.
+    """
     return {
         "accuracy": float(accuracy_score(y_true, y_pred)),
-        "precision": float(precision_score(y_true, y_pred, zero_division=0)),
-        "recall": float(recall_score(y_true, y_pred, zero_division=0)),
-        "f1": float(f1_score(y_true, y_pred, zero_division=0)),
+        "precision": float(precision_score(y_true, y_pred, zero_division=0)),  # type: ignore[arg-type]
+        "recall": float(recall_score(y_true, y_pred, zero_division=0)),  # type: ignore[arg-type]
+        "f1": float(f1_score(y_true, y_pred, zero_division=0)),  # type: ignore[arg-type]
         "auroc": float(roc_auc_score(y_true, y_prob)) if len(np.unique(y_true)) > 1 else 0.0,
         "brier": float(brier_score_loss(y_true, y_prob)),
         "ece": expected_calibration_error(y_true=y_true, y_prob=y_prob),

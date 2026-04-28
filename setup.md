@@ -54,7 +54,22 @@ pnpm test
 
 ## Run
 
-Phase 0 has no runnable services yet — only the shared packages, tests, and CI scaffolding. Subsequent phases each add their own run instructions to this section.
+### ML pipelines
+
+Each model has its own pipeline directory under `ml-pipelines/`. Phase 1a ships the credit pipeline; readmission and toxicity follow in 1b/1c.
+
+    cd ml-pipelines/credit
+    PATH=$HOME/.local/bin:$PATH uv run python 01_download.py            # downloads HMDA-CA-2017
+    PATH=$HOME/.local/bin:$PATH uv run python 02_preprocess.py          # writes train/val/test parquet
+    PATH=$HOME/.local/bin:$PATH uv run python 03_train.py               # ~2 min on a laptop
+    PATH=$HOME/.local/bin:$PATH uv run python 04_evaluate.py            # writes evaluation.json
+    PATH=$HOME/.local/bin:$PATH uv run python 05_generate_artifacts.py  # writes model card + datasheet
+
+Downloaded raw data lands in `data/raw/credit/` (gitignored). Trained artifacts (model + metrics + model card + datasheet) land in `ml-pipelines/credit/artifacts/`.
+
+The smoke test (`tests/test_smoke.py`) exercises the full pipeline on synthetic data in under 2 seconds and runs in CI on every PR.
+
+> **macOS note:** XGBoost requires libomp. Install with `brew install libomp` once.
 
 ## Test
 
