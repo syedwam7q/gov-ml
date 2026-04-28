@@ -22,8 +22,10 @@ def build_app() -> FastAPI:
     app.include_router(health_router.router)
 
     @app.get("/", include_in_schema=False)
-    async def _root() -> RedirectResponse:
+    async def _root() -> RedirectResponse:  # noqa: RUF029  # registered by decorator
         return RedirectResponse(url="/healthz")
+
+    _ = _root  # silence pyright reportUnusedFunction — used via decorator registration
 
     return app
 
