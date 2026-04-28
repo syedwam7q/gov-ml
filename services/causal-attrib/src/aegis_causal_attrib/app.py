@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from aegis_causal_attrib import __version__
+from aegis_causal_attrib.routers import attrib as attrib_router
 from aegis_causal_attrib.routers import health as health_router
 
 
@@ -19,6 +20,7 @@ def build_app() -> FastAPI:
         ),
     )
     app.include_router(health_router.router)
+    app.include_router(attrib_router.router)
     return app
 
 
