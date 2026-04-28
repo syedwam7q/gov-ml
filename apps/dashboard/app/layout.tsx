@@ -8,12 +8,18 @@ import "./globals.css";
  * Inter — UI sans (body, headings, every label that isn't mono).
  * `--font-inter` is the CSS variable consumed by `--aegis-font-sans`
  * in `packages/ui/src/styles/tokens.css`.
+ *
+ * `display: "swap"` + `adjustFontFallback` keeps the page legible even
+ * when the Google CDN fetch is slow — the system fallback paints first,
+ * then the woff2 swaps in once it arrives.
  */
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-inter",
   weight: ["400", "500", "600", "700"],
+  fallback: ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
+  adjustFontFallback: true,
 });
 
 /**
@@ -25,6 +31,7 @@ const mono = JetBrains_Mono({
   display: "swap",
   variable: "--font-mono",
   weight: ["400", "500", "600"],
+  fallback: ["ui-monospace", "SF Mono", "Menlo", "monospace"],
 });
 
 /**
@@ -36,6 +43,8 @@ const serif = Source_Serif_4({
   display: "swap",
   variable: "--font-serif",
   weight: ["400", "600"],
+  fallback: ["Charter", "Georgia", "serif"],
+  adjustFontFallback: true,
 });
 
 export const metadata: Metadata = {

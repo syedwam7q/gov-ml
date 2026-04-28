@@ -146,6 +146,56 @@ Then:
 
 That uploads every `.datasource` / `.pipe` / `.endpoint` to Tinybird — the dashboard will read from the resulting REST endpoints once Phase 3 starts emitting signals.
 
+### Dashboard (Phase 4)
+
+The Next.js 16 dashboard at `apps/dashboard`. Editorial Dark, fully token-driven, ships with a complete demo dataset (Apple-Card-2019 hero scenario) so it walks end-to-end with no backend.
+
+**One-time provisioning** (skip everything for local dev — the dashboard runs against the seeded mock fallback when keys are missing):
+
+1.  **Clerk (auth)** — sign up at <https://dashboard.clerk.com>, create a "development" instance for local + a "production" instance for Vercel. Configure email-OTP only, no password sign-up. Copy the publishable + secret keys into `.env.local`:
+
+        cp apps/dashboard/.env.example apps/dashboard/.env.local
+
+    Then fill `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`. Both must be set together — when only one is present the dev-bypass refuses to engage and Clerk surfaces its own misconfig error.
+
+2.  **Control-plane URL** — set `NEXT_PUBLIC_CONTROL_PLANE_URL` to wherever Phase 2's FastAPI is reachable (typically `http://localhost:8000` for local, the Vercel URL for production). When unset (or set to `mock`), the dashboard falls back to the seeded dataset in `apps/dashboard/app/_lib/mock-data.ts`.
+
+3.  **Emergency stop** — `EMERGENCY_STOP=true` flips the global red banner across every page and freezes auto-actions. Default `false`.
+
+**Run the dashboard locally:**
+
+    pnpm --filter @aegis/dashboard dev
+
+That boots Next 16 with Turbopack on <http://localhost:3000>. The chrome (top nav · left rail · ⌘J palette · ⌘K assistant · emergency banner) is alive on every route. With no backend running, every page reads from the mock fallback so the demo is always walkable.
+
+**Live routes (16):**
+
+| Route             | What it shows                                                                                                                    |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `/fleet`          | 3-model fleet overview with KPIs, sparklines, live activity feed                                                                 |
+| `/models`         | Model registry index                                                                                                             |
+| `/models/[id]`    | 10 deep-link tabs: Overview · Drift · Fairness · Calibration · Performance · Causal DAG · Audit · Versions · Datasets · Policies |
+| `/incidents`      | Decisions list with model · state · severity filters                                                                             |
+| `/incidents/[id]` | TimelineScrubber · CausalDAG · ShapleyWaterfall · ParetoChart · audit chain — the demo showcase                                  |
+| `/approvals`      | Pending-approval queue split by admin / operator tier                                                                            |
+| `/audit`          | Paginated Merkle-chained log with verify-chain button + CSV export                                                               |
+| `/policies`       | Per-model YAML policies with version history + dry-run / live toggle                                                             |
+| `/datasets`       | Datasheets-for-Datasets (Gebru 2021) with schema + snapshot drift                                                                |
+| `/compliance`     | EU AI Act · NIST AI RMF · ECOA · FCRA · HIPAA mapping with PDF export                                                            |
+| `/chat`           | Full-screen Governance Assistant (UI shell; Groq backend in Phase 8)                                                             |
+| `/settings`       | Profile · Notifications · Team · API tokens · Operations (admin emergency-stop)                                                  |
+| `/design`         | Living style guide rendering every component — auto-404'd in production                                                          |
+| `/api/health`     | Public liveness JSON                                                                                                             |
+
+**Production build:**
+
+    pnpm --filter @aegis/dashboard build
+    pnpm --filter @aegis/dashboard start
+
+The build prerenders 16 routes; dynamic segments (`/models/[id]`, `/incidents/[id]`, `/audit`, `/datasets`, `/policies`, `/incidents`) render on-demand. The `/design` route is statically prerendered as a 404 in production via the `NODE_ENV` guard inside the page itself.
+
+**Component library:** every shared component lives in `packages/ui/src/components`. The token system is in `packages/ui/src/styles/tokens.css` — Tailwind reads it through CSS custom properties, so colors and typography never fork between CSS and JS.
+
 ## Test
 
     pnpm test          # vitest across @aegis/shared-ts and @aegis/ui
@@ -165,6 +215,22 @@ Tests that need a live Postgres are auto-skipped if `DATABASE_URL` is unset.
 | `EMERGENCY_STOP`                                                | `false` (admin sets to `true` from the dashboard) |
 | Plus everything from `.env.example` (Clerk, Tinybird, HF, Groq) |
 
-**Dashboard → Vercel** (Phase 4) and **HF Spaces → toxicity service** (Phase 4) follow.
+**Dashboard → Vercel.** From the repo root, after `vercel link`:
+
+    vercel --cwd apps/dashboard
+
+Set the dashboard's environment variables in the Vercel project (production scope):
+
+| Var                                               | Source                                                     |
+| ------------------------------------------------- | ---------------------------------------------------------- |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`               | Clerk production instance                                  |
+| `CLERK_SECRET_KEY`                                | Clerk production instance                                  |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL`                   | `/login`                                                   |
+| `NEXT_PUBLIC_CLERK_SIGN_UP_URL`                   | `/login` (OTP-only, no separate sign-up)                   |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL` | `/fleet`                                                   |
+| `NEXT_PUBLIC_CONTROL_PLANE_URL`                   | The control-plane Vercel URL or `mock` for the seeded demo |
+| `EMERGENCY_STOP`                                  | `false` (admin sets to `true` from /settings)              |
+
+**HF Spaces → toxicity service** (Phase 4 onward) follows.
 
 The full mapping of routes to deployment targets is in `vercel.ts` (typed config; comments in the file).
