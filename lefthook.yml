@@ -21,5 +21,8 @@ pre-push:
       run: pnpm turbo typecheck
     test:
       run: pnpm turbo test
+    # Pre-push pytest excludes ml-pipelines/toxicity — that smoke test downloads
+    # a tiny HF model on first run and adds ~10 s to every push. CI runs the
+    # full suite (with the [nlp] extras installed) so toxicity is still gated.
     pytest:
-      run: bash -c 'export PATH="$HOME/.local/bin:$PATH" && uv run pytest'
+      run: bash -c 'export PATH="$HOME/.local/bin:$PATH" && uv run pytest --ignore=ml-pipelines/toxicity'
