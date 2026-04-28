@@ -27,8 +27,15 @@ export const config: VercelConfig = {
   // Skip the dashboard re-deploy when only ml-pipelines / docs changed.
   ignoreCommand: "git diff HEAD^ HEAD --quiet -- apps/ packages/ services/ workflows/ vercel.ts",
   crons: [
+    // Heartbeat — proves cron infrastructure is alive.
     {
-      path: "/api/cp/internal/cron/heartbeat",
+      path: "/api/cp/api/v1/internal/cron/heartbeat",
+      schedule: "*/5 * * * *",
+    },
+    // Detection fan-out — Phase 3 Monitor stage. Iterates the model
+    // registry and POSTs /detect/run to each detect service.
+    {
+      path: "/api/cp/api/v1/internal/cron/detect",
       schedule: "*/5 * * * *",
     },
   ],
