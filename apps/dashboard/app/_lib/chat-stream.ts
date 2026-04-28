@@ -233,9 +233,20 @@ function friendlyAssistantError(raw: string): string {
   if (/RateLimitError|429/i.test(raw)) {
     return "Governance Assistant rate-limited by Groq. Wait a moment and retry.";
   }
+  if (/tool_use_failed|Failed to call a function/i.test(raw)) {
+    return "The model returned a malformed tool call (a known Llama-3.1-8B quirk). Retry your question — the assistant routes the synthesis turn to the 70B model after the first tool call now.";
+  }
+  if (/BadRequestError|400/i.test(raw)) {
+    return "Groq rejected the request (400). Try rephrasing your question; if it persists, the assistant logs will have detail.";
+  }
+  if (/ConnectError|ConnectionError|ECONNREFUSED|upstream unreachable/i.test(raw)) {
+    return "Cannot reach a backend the assistant relies on. Make sure the control plane is running on port 8000 and retry.";
+  }
   return raw;
 }
 
 function isUnavailableError(raw: string): boolean {
-  return /api_key|AuthenticationError|401|GROQ_API_KEY/i.test(raw);
+  return /api_key|AuthenticationError|401|GROQ_API_KEY|upstream unreachable|ECONNREFUSED/i.test(
+    raw,
+  );
 }

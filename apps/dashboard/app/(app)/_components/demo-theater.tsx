@@ -204,9 +204,15 @@ export function DemoTheater({ open, demoId, onClose, onComplete }: DemoTheaterPr
           subStatus={subStatus}
           eventCount={eventCount}
           debugLog={debugLog}
+          isComplete={completedRef.current}
+          eventCountTotal={SCENE_ORDER.length}
         />
         <DemoStage scenes={scenes} activeScene={activeScene} demoId={demoId} />
-        <DemoProgressBar activeIndex={progressIndex} />
+        <DemoProgressBar
+          activeIndex={progressIndex}
+          isComplete={completedRef.current}
+          onSelect={(scene) => setActiveScene(scene)}
+        />
       </div>
     </div>
   );
@@ -218,12 +224,16 @@ function DemoHeader({
   subStatus,
   eventCount,
   debugLog,
+  isComplete,
+  eventCountTotal,
 }: {
   readonly onClose: () => void;
   readonly activeScene: SceneKind;
   readonly subStatus: SubStatus;
   readonly eventCount: number;
   readonly debugLog: readonly string[];
+  readonly isComplete: boolean;
+  readonly eventCountTotal: number;
 }): ReactNode {
   const dotColor: Record<SubStatus, string> = {
     idle: "bg-aegis-fg-3",
@@ -243,7 +253,10 @@ function DemoHeader({
             Apple Card 2019 — Live Replay
           </p>
           <p className="font-mono text-[11px] uppercase tracking-aegis-mono text-aegis-fg-3">
-            Stage · {SCENE_LABEL[activeScene]} · {eventCount}/7 events
+            Stage · {SCENE_LABEL[activeScene]} ·{" "}
+            {isComplete
+              ? `${eventCountTotal}/${eventCountTotal} · review mode`
+              : `${eventCount}/${eventCountTotal} events`}
           </p>
         </div>
       </div>
@@ -277,31 +290,61 @@ function DemoHeader({
   );
 }
 
-function DemoProgressBar({ activeIndex }: { readonly activeIndex: number }): ReactNode {
+function DemoProgressBar({
+  activeIndex,
+  isComplete,
+  onSelect,
+}: {
+  readonly activeIndex: number;
+  readonly isComplete: boolean;
+  readonly onSelect: (scene: SceneKind) => void;
+}): ReactNode {
   return (
     <footer className="border-t border-aegis-stroke px-6 py-3">
-      <div className="flex items-center gap-2">
+      {isComplete ? (
+        <p className="aegis-mono mb-2 text-[10px] uppercase tracking-aegis-mono text-aegis-fg-3">
+          Replay complete · click any stage to revisit it
+        </p>
+      ) : null}
+      <div className="flex items-stretch gap-2">
         {SCENE_ORDER.map((scene, idx) => {
           const reached = idx <= activeIndex && activeIndex >= 0;
           const active = idx === activeIndex;
-          return (
-            <div key={scene} className="flex flex-1 items-center gap-2">
-              <div className="flex flex-1 flex-col gap-1">
-                <p
-                  className={`font-mono text-[10px] uppercase tracking-aegis-mono ${
-                    active ? "text-aegis-accent" : reached ? "text-aegis-fg-2" : "text-aegis-fg-3"
-                  }`}
-                >
-                  {SCENE_LABEL[scene]}
-                </p>
-                <div className="h-1 overflow-hidden rounded-full bg-aegis-stroke">
-                  <div
-                    className={`h-full transition-all duration-500 ease-out ${
-                      reached ? "w-full bg-aegis-accent" : "w-0 bg-transparent"
-                    } ${active ? "animate-pulse" : ""}`}
-                  />
-                </div>
+          const interactive = isComplete;
+          const inner = (
+            <div className="flex flex-1 flex-col gap-1">
+              <p
+                className={`font-mono text-[10px] uppercase tracking-aegis-mono transition-colors ${
+                  active ? "text-aegis-accent" : reached ? "text-aegis-fg-2" : "text-aegis-fg-3"
+                }`}
+              >
+                {idx + 1}. {SCENE_LABEL[scene]}
+              </p>
+              <div className="h-1 overflow-hidden rounded-full bg-aegis-stroke">
+                <div
+                  className={`h-full transition-all duration-500 ease-out ${
+                    reached ? "w-full bg-aegis-accent" : "w-0 bg-transparent"
+                  } ${active && !isComplete ? "animate-pulse" : ""}`}
+                />
               </div>
+            </div>
+          );
+          return interactive ? (
+            <button
+              key={scene}
+              type="button"
+              onClick={() => onSelect(scene)}
+              aria-pressed={active}
+              aria-label={`Revisit ${SCENE_LABEL[scene]}`}
+              className={`group flex flex-1 cursor-pointer items-center gap-2 rounded-aegis-control px-2 py-1 text-left transition-colors hover:bg-aegis-surface-2 focus-visible:bg-aegis-surface-2 ${
+                active ? "bg-aegis-accent/10 ring-1 ring-aegis-accent/40" : ""
+              }`}
+            >
+              {inner}
+            </button>
+          ) : (
+            <div key={scene} className="flex flex-1 items-center gap-2 px-2 py-1">
+              {inner}
             </div>
           );
         })}

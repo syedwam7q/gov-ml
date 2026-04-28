@@ -47,6 +47,23 @@ def _scripted_groq(
     return _fake
 
 
+def _scripted_groq_recording_phases(
+    responses: list[Any],
+    record: list[str],
+) -> Callable[..., Awaitable[Any]]:
+    """Like _scripted_groq but appends each call's `phase` kwarg to
+    `record` so tests can lock the model-rotation policy."""
+    queue = list(responses)
+
+    async def _fake(**kwargs: Any) -> Any:
+        phase = kwargs.get("phase", "<unset>")
+        if isinstance(phase, str):
+            record.append(phase)
+        return queue.pop(0)
+
+    return _fake
+
+
 @pytest.mark.asyncio
 async def test_loop_executes_tool_then_returns_final_answer(
     monkeypatch: pytest.MonkeyPatch,
@@ -183,3 +200,50 @@ async def test_loop_surfaces_tool_errors_to_model(
     assert end_frame.tool_error is not None
     final = next(f for f in frames if f.kind == "final_text")
     assert "failing" in final.text.lower() or "sorry" in final.text.lower()
+
+
+@pytest.mark.asyncio
+async def test_loop_switches_to_quality_model_after_first_tool_call(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The 8B fast model handles 'should I call a tool?' fine but
+    sometimes emits malformed `<function=...>` blocks when synthesizing
+    a tool result, which Groq rejects with 400 tool_use_failed.
+    Regression guard: once any tool has fired, every remaining iteration
+    must use the quality model (`phase='final'`)."""
+    phases: list[str] = []
+    monkeypatch.setattr(
+        groq_client,
+        "chat_completion",
+        _scripted_groq_recording_phases(
+            [
+                _assistant_with_tool_call("call-1", "get_fleet_status", {}),
+                _assistant_final("Three models online — all green."),
+            ],
+            phases,
+        ),
+    )
+    import respx
+
+    async with respx.mock() as mock:
+        mock.get("http://localhost:8000/api/cp/models").mock(
+            return_value=httpx.Response(
+                200,
+                json=[
+                    {
+                        "id": "credit-v1",
+                        "risk_class": "HIGH",
+                        "name": "C",
+                        "family": "tabular",
+                    }
+                ],
+            )
+        )
+        async for _ in run_chat_loop(
+            messages=[{"role": "user", "content": "fleet?"}],
+            scope={},
+        ):
+            pass
+    assert len(phases) == 2
+    assert phases[0] == "tool_decision", "first turn should use the fast model"
+    assert phases[1] == "final", "after a tool fires, synthesis must route to the quality model"
