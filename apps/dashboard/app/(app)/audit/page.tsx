@@ -1,18 +1,24 @@
-import { AuditIcon } from "@aegis/ui";
+import { listAudit } from "../../_lib/api";
 
-import { PageStub } from "../_components/page-stub";
+import { AuditView } from "./_view";
 
 export const metadata = {
   title: "Audit",
 };
 
-export default function AuditPage() {
-  return (
-    <PageStub
-      label="Audit"
-      description="The Merkle-chained, append-only audit feed with the verify-chain button and CSV/JSON export. Every governance decision lands here."
-      arrivingIn="phase 4d"
-      icon={<AuditIcon width={24} height={24} />}
-    />
-  );
+interface AuditPageProps {
+  readonly searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+const PAGE_SIZE = 20;
+
+export default async function AuditPage({ searchParams }: AuditPageProps) {
+  const search = await searchParams;
+  const pageParam = typeof search.page === "string" ? Number.parseInt(search.page, 10) : 1;
+  const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+  const offset = (page - 1) * PAGE_SIZE;
+
+  const { rows, total } = await listAudit({ limit: PAGE_SIZE, offset });
+
+  return <AuditView rows={rows} total={total} page={page} pageSize={PAGE_SIZE} />;
 }

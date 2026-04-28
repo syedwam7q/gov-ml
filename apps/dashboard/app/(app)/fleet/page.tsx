@@ -1,18 +1,25 @@
-import { FleetIcon } from "@aegis/ui";
+import { listFleetKPIs, listModels, listActivity } from "../../_lib/api";
 
-import { PageStub } from "../_components/page-stub";
+import { FleetView } from "./_view";
 
 export const metadata = {
   title: "Fleet",
 };
 
-export default function FleetPage() {
-  return (
-    <PageStub
-      label="Fleet"
-      description="Three production models — credit, toxicity, hospital readmission — with their KPI tiles, sparklines, and live activity feed. The default-after-login view per spec §10.1."
-      arrivingIn="phase 4d"
-      icon={<FleetIcon width={24} height={24} />}
-    />
-  );
+/**
+ * /fleet — the default-after-login canonical view.
+ *
+ * Server-rendered: hits the control-plane (or mock fallback) once on the
+ * server, then hands a fully-typed snapshot to the client `FleetView`
+ * which subscribes to live SSE updates (Phase 5 wiring; today refreshed
+ * via SWR's pollInterval).
+ */
+export default async function FleetPage() {
+  const [models, kpis, activity] = await Promise.all([
+    listModels(),
+    listFleetKPIs("24h"),
+    listActivity(20),
+  ]);
+
+  return <FleetView models={models} kpis={kpis} activity={activity} />;
 }

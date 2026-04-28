@@ -1,8 +1,32 @@
 export { cn } from "./lib/cn";
 
+export {
+  ActivityFeed,
+  type ActivityFeedEvent,
+  type ActivityFeedKind,
+  type ActivityFeedProps,
+} from "./components/activity-feed";
 export { Banner, type BannerProps, type BannerTone } from "./components/banner";
 export { Brand, BrandMark, type BrandProps } from "./components/brand";
+export {
+  CalibrationPlot,
+  type CalibrationBucket,
+  type CalibrationPlotProps,
+} from "./components/calibration-plot";
+export {
+  CausalDAG,
+  type CausalDAGEdge,
+  type CausalDAGNode,
+  type CausalDAGProps,
+} from "./components/causal-dag";
+export { DecisionCard, type DecisionCardProps } from "./components/decision-card";
+export { DistributionDiff, type DistributionDiffProps } from "./components/distribution-diff";
 export { EmptyState, type EmptyStateProps } from "./components/empty-state";
+export {
+  FairnessHeatmap,
+  type FairnessHeatmapCell,
+  type FairnessHeatmapProps,
+} from "./components/fairness-heatmap";
 export { HashBadge, type HashBadgeProps } from "./components/hash-badge";
 export {
   ApprovalsIcon,
@@ -26,9 +50,30 @@ export {
 export { Kbd, type KbdProps } from "./components/kbd";
 export { KPITile, type KPITileProps, type KPITileTone } from "./components/kpi-tile";
 export { LeftRail, type LeftRailProps, type RailItem, type RailRole } from "./components/left-rail";
+export {
+  ModelCard,
+  type ModelCardKPI,
+  type ModelCardProps,
+  type ModelCardSeverity,
+} from "./components/model-card";
+export {
+  ParetoChart,
+  type ParetoCandidate,
+  type ParetoChartProps,
+} from "./components/pareto-chart";
 export { RoleProvider, type RoleProviderProps, useRole } from "./components/role-context";
 export { RoleGate, type RoleGateProps } from "./components/role-gate";
 export { SeverityPill, type Severity, type SeverityPillProps } from "./components/severity-pill";
+export {
+  ShapleyWaterfall,
+  type ShapleyContribution,
+  type ShapleyWaterfallProps,
+} from "./components/shapley-waterfall";
 export { Sparkline, type SparklineProps, type SparklineTone } from "./components/sparkline";
 export { StatePill, type DecisionState, type StatePillProps } from "./components/state-pill";
+export {
+  TimelineScrubber,
+  type TimelineEvent,
+  type TimelineScrubberProps,
+} from "./components/timeline-scrubber";
 export { TopNav, type BreadcrumbCrumb, type TopNavProps } from "./components/top-nav";
