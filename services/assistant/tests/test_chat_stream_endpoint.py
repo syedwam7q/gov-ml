@@ -49,7 +49,9 @@ def test_chat_stream_returns_503_without_api_key(monkeypatch: pytest.MonkeyPatch
     from aegis_assistant.routers import chat as chat_router
 
     monkeypatch.setattr(
-        chat_router, "get_settings", lambda: Settings(_env_file=None, GROQ_API_KEY="")
+        chat_router,
+        "get_settings",
+        lambda: Settings(_env_file=None, GROQ_API_KEY=""),  # pyright: ignore[reportCallIssue]
     )
     res = TestClient(build_app()).post(
         "/chat/stream",
@@ -68,7 +70,7 @@ def test_chat_stream_walks_tool_then_final(monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setattr(
         chat_router,
         "get_settings",
-        lambda: Settings(_env_file=None, GROQ_API_KEY="test-key"),
+        lambda: Settings(_env_file=None, GROQ_API_KEY="test-key"),  # pyright: ignore[reportCallIssue]
     )
 
     queue = [
