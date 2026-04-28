@@ -1,18 +1,15 @@
-import { ApprovalsIcon } from "@aegis/ui";
+import { listDecisions, listModels } from "../../_lib/api";
 
-import { PageStub } from "../_components/page-stub";
+import { ApprovalsView } from "./_view";
 
 export const metadata = {
   title: "Approvals",
 };
 
-export default function ApprovalsPage() {
-  return (
-    <PageStub
-      label="Approvals"
-      description="Pending action plans waiting on a human approver. Operators see plans for their model; admins see everything fleet-wide."
-      arrivingIn="phase 4d"
-      icon={<ApprovalsIcon width={24} height={24} />}
-    />
-  );
+export default async function ApprovalsPage() {
+  const [decisions, models] = await Promise.all([
+    listDecisions({ state: "awaiting_approval" }),
+    listModels(),
+  ]);
+  return <ApprovalsView decisions={decisions} models={models} />;
 }

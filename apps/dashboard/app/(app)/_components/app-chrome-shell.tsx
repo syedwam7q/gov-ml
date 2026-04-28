@@ -64,6 +64,12 @@ export function AppChromeShell({ children, role = "admin" }: AppChromeShellProps
 
   return (
     <RoleProvider value={role}>
+      <a
+        href="#aegis-main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus:rounded-aegis-control focus:border focus:border-aegis-accent focus:bg-aegis-surface-2 focus:px-3 focus:py-1.5 focus:text-aegis-sm focus:text-aegis-fg"
+      >
+        skip to content
+      </a>
       <TopNav
         crumbs={crumbs}
         timeRange="24h"
@@ -87,7 +93,9 @@ export function AppChromeShell({ children, role = "admin" }: AppChromeShellProps
             </Link>
           )}
         />
-        <main className="flex-1 min-w-0">{children}</main>
+        <main id="aegis-main" className="flex-1 min-w-0">
+          {children}
+        </main>
       </div>
 
       <CommandPalette open={paletteOpen} onClose={closePalette} />

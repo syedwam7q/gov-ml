@@ -1,18 +1,22 @@
-import { DatasetsIcon } from "@aegis/ui";
+import { listDatasets, listModels } from "../../_lib/api";
 
-import { PageStub } from "../_components/page-stub";
+import { DatasetsView } from "./_view";
 
 export const metadata = {
   title: "Datasets",
 };
 
-export default function DatasetsPage() {
-  return (
-    <PageStub
-      label="Datasets"
-      description="Datasheets-for-Datasets per Gebru 2021 with snapshot diffing, drift between baselines, and full provenance for every training run."
-      arrivingIn="phase 4e"
-      icon={<DatasetsIcon width={24} height={24} />}
-    />
-  );
+interface DatasetsPageProps {
+  readonly searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function DatasetsPage({ searchParams }: DatasetsPageProps) {
+  const search = await searchParams;
+  const datasetFilter = typeof search.dataset === "string" ? search.dataset : undefined;
+
+  const [datasets, models] = await Promise.all([listDatasets(), listModels()]);
+
+  const activeDataset = datasets.find((d) => d.id === datasetFilter) ?? datasets[0];
+
+  return <DatasetsView datasets={datasets} models={models} activeDataset={activeDataset} />;
 }

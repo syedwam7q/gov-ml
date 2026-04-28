@@ -6,6 +6,12 @@ export {
   type ActivityFeedKind,
   type ActivityFeedProps,
 } from "./components/activity-feed";
+export {
+  ApprovalCard,
+  type ApprovalAction,
+  type ApprovalCardProps,
+  type ApprovalRole,
+} from "./components/approval-card";
 export { Banner, type BannerProps, type BannerTone } from "./components/banner";
 export { Brand, BrandMark, type BrandProps } from "./components/brand";
 export {
@@ -61,9 +67,11 @@ export {
   type ParetoCandidate,
   type ParetoChartProps,
 } from "./components/pareto-chart";
+export { PolicyYaml, type PolicyYamlProps } from "./components/policy-yaml";
 export { RoleProvider, type RoleProviderProps, useRole } from "./components/role-context";
 export { RoleGate, type RoleGateProps } from "./components/role-gate";
 export { SeverityPill, type Severity, type SeverityPillProps } from "./components/severity-pill";
+export { Skeleton, SkeletonRows, type SkeletonProps } from "./components/skeleton";
 export {
   ShapleyWaterfall,
   type ShapleyContribution,

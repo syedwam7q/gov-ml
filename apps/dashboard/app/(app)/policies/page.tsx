@@ -1,18 +1,26 @@
-import { PoliciesIcon } from "@aegis/ui";
+import { listModels, listPolicies } from "../../_lib/api";
 
-import { PageStub } from "../_components/page-stub";
+import { PoliciesView } from "./_view";
 
 export const metadata = {
   title: "Policies",
 };
 
-export default function PoliciesPage() {
+interface PoliciesPageProps {
+  readonly searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function PoliciesPage({ searchParams }: PoliciesPageProps) {
+  const search = await searchParams;
+  const modelFilter = typeof search.model === "string" ? search.model : undefined;
+
+  const [policies, models] = await Promise.all([listPolicies(), listModels()]);
+
   return (
-    <PageStub
-      label="Policies"
-      description="Monaco YAML editor with the Aegis policy DSL — drift thresholds, fairness floors, and approval routing. Dry-run / live toggle plus trigger preview."
-      arrivingIn="phase 4e"
-      icon={<PoliciesIcon width={24} height={24} />}
+    <PoliciesView
+      policies={policies}
+      models={models}
+      activeModelId={modelFilter ?? models[0]?.id ?? "credit-v1"}
     />
   );
 }

@@ -228,6 +228,33 @@ export interface ActivityEvent {
 
 // ──────────── Datasets ────────────
 
+/** Subset of Datasheets-for-Datasets sections (Gebru et al. 2021). */
+export interface Datasheet {
+  /** Why was the dataset created? */
+  readonly motivation: string;
+  /** What instances make up the dataset? */
+  readonly composition: string;
+  /** How was the data acquired? */
+  readonly collection: string;
+  /** Recommended uses + tasks the dataset should NOT be used for. */
+  readonly uses: string;
+  /** Listed protected / sensitive attributes captured by the dataset. */
+  readonly sensitive_attributes: readonly string[];
+  /** Maintenance schedule / known limitations. */
+  readonly maintenance: string;
+}
+
+export interface DatasetSnapshot {
+  readonly id: string;
+  readonly created_at: string;
+  /** Row count at this snapshot. */
+  readonly row_count: number;
+  /** PSI of this snapshot relative to the baseline (0 = identical). */
+  readonly psi_vs_baseline: number;
+  /** Optional notes — e.g. "monthly refresh", "schema change". */
+  readonly note?: string;
+}
+
 export interface Dataset {
   readonly id: string;
   readonly name: string;
@@ -238,6 +265,16 @@ export interface Dataset {
   readonly row_count: number;
   readonly snapshot_id: string;
   readonly model_ids: readonly string[];
+  /** Structured datasheet content (Gebru 2021). */
+  readonly datasheet?: Datasheet;
+  /** Snapshot history across time, newest first. */
+  readonly snapshots?: readonly DatasetSnapshot[];
+  /** Schema overview — column → semantic type. */
+  readonly schema?: readonly {
+    readonly column: string;
+    readonly type: string;
+    readonly hint?: string;
+  }[];
 }
 
 // ──────────── Policies ────────────

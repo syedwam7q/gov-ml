@@ -1,18 +1,12 @@
-import { ComplianceIcon } from "@aegis/ui";
+import { listCompliance } from "../../_lib/api";
 
-import { PageStub } from "../_components/page-stub";
+import { ComplianceView } from "./_view";
 
 export const metadata = {
   title: "Compliance",
 };
 
-export default function CompliancePage() {
-  return (
-    <PageStub
-      label="Compliance"
-      description="Regulatory mapping table — EU AI Act, NIST AI RMF, ECOA, HIPAA — with one-click PDF report generation suitable for auditors."
-      arrivingIn="phase 4e"
-      icon={<ComplianceIcon width={24} height={24} />}
-    />
-  );
+export default async function CompliancePage() {
+  const frameworks = await listCompliance();
+  return <ComplianceView frameworks={frameworks} />;
 }

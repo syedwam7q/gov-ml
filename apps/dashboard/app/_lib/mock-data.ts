@@ -216,7 +216,7 @@ const KPIS: readonly ModelKPI[] = [
       status: "danger",
     },
     severity: "HIGH",
-    open_incidents: 1,
+    open_incidents: 2,
   },
   {
     model_id: "toxicity-v1",
@@ -253,10 +253,10 @@ const KPIS: readonly ModelKPI[] = [
       value: 0.78,
       floor: 0.75,
       trend: sparkline({ base: 0.78, mode: "stable", noise: 0.003 }, 34),
-      status: "ok",
+      status: "warning",
     },
-    severity: "OK",
-    open_incidents: 0,
+    severity: "CRITICAL",
+    open_incidents: 1,
   },
 ];
 
@@ -474,6 +474,139 @@ const DECISIONS: readonly GovernanceDecision[] = [
     evaluated_at: ts(60 * 20),
     title: "AAVE false-positive uptick — toxicity-v1",
   },
+  {
+    id: "dec-004",
+    model_id: "credit-v1",
+    policy_id: "pol-credit-v1-active",
+    state: "awaiting_approval",
+    severity: "MEDIUM",
+    drift_signal: {
+      model_id: "credit-v1",
+      metric: "psi_credit_history_length",
+      value: 0.16,
+      baseline: 0.04,
+      severity: "MEDIUM",
+      observed_at: ts(35),
+    },
+    causal_attribution: {
+      target_metric: "psi_credit_history_length",
+      observed_value: 0.16,
+      counterfactual_value: 0.05,
+      root_causes: [
+        {
+          node: "channel_change.refinance_partners",
+          contribution: 0.71,
+          explanation:
+            "New refinance-partner channel skews the credit-history-length feature toward older accounts. PSI = 0.16 (above 0.10 alarm threshold).",
+        },
+        {
+          node: "feature_drift.account_age_max",
+          contribution: 0.29,
+          explanation: "Maximum account-age bucket grew from 28 to 41 — partner cohort effect.",
+        },
+      ],
+    },
+    plan: [
+      {
+        key: "retrain-include-refinance",
+        label: "Retrain with refinance-partner subsample",
+        kind: "retrain",
+        reward: { utility: 0.83, safety: 0.86, cost: 0.28 },
+        pareto: true,
+        selected: true,
+        explanation:
+          "Adds 12k refinance applicants to the training cohort. Restores PSI ≤ 0.05 in 2-hour window.",
+      },
+      {
+        key: "drop-refinance-channel",
+        label: "Pause refinance-partner pipeline",
+        kind: "kill_switch",
+        reward: { utility: 0.42, safety: 0.93, cost: 0.18 },
+        pareto: true,
+        selected: false,
+        explanation:
+          "Cuts the drift source at the cost of partner volume. Reserved if retrain misses SLA.",
+      },
+    ],
+    approval: {
+      id: "appr-002",
+      decision_id: "dec-004",
+      required_role: "operator",
+      requested_at: ts(20),
+    },
+    opened_at: ts(35),
+    title: "Credit-history feature drift — credit-v1 (refinance cohort)",
+  },
+  {
+    id: "dec-005",
+    model_id: "readmission-v1",
+    policy_id: "pol-readmission-v1-active",
+    state: "awaiting_approval",
+    severity: "CRITICAL",
+    drift_signal: {
+      model_id: "readmission-v1",
+      metric: "calibration_ece_diabetes_subgroup",
+      value: 0.082,
+      baseline: 0.041,
+      severity: "CRITICAL",
+      observed_at: ts(12),
+      subgroup: { condition: "diabetes_type_2", insurance: "medicaid" },
+    },
+    causal_attribution: {
+      target_metric: "calibration_ece_diabetes_subgroup",
+      observed_value: 0.082,
+      counterfactual_value: 0.041,
+      root_causes: [
+        {
+          node: "label_shift.30day_readmit_rate",
+          contribution: 0.58,
+          explanation:
+            "30-day readmission base rate for the Medicaid Type-2 cohort rose from 14.1% → 18.3%. Likely upstream coding policy change.",
+        },
+        {
+          node: "feature_drift.length_of_stay",
+          contribution: 0.31,
+          explanation:
+            "Mean LOS in cohort fell 0.8 days — discharge-policy update flagged in the ICD-10 ingest.",
+        },
+        {
+          node: "model.calibration_isotonic_outdated",
+          contribution: 0.11,
+          explanation: "Last isotonic recalibration ran 18 days ago — interval policy is 14d.",
+        },
+      ],
+    },
+    plan: [
+      {
+        key: "shadow-recalibrate",
+        label: "Shadow-deploy isotonic recalibration",
+        kind: "shadow",
+        reward: { utility: 0.78, safety: 0.94, cost: 0.12 },
+        pareto: true,
+        selected: true,
+        explanation:
+          "Runs the recalibrated head in shadow against 100% live traffic for 24h. No clinical impact until promoted.",
+      },
+      {
+        key: "freeze-cohort-routing",
+        label: "Route Medicaid Type-2 cohort to clinician review",
+        kind: "kill_switch",
+        reward: { utility: 0.55, safety: 0.99, cost: 0.46 },
+        pareto: true,
+        selected: false,
+        explanation:
+          "Removes the cohort from automated risk scoring. Highest safety, but operationally heavy on clinical staff.",
+      },
+    ],
+    approval: {
+      id: "appr-003",
+      decision_id: "dec-005",
+      required_role: "admin",
+      requested_at: ts(8),
+    },
+    opened_at: ts(12),
+    title: "Calibration drift — readmission-v1 (Medicaid · Type-2 diabetes)",
+  },
 ];
 
 // ──────────── Audit chain ────────────
@@ -579,6 +712,134 @@ const AUDIT: readonly AuditRow[] = [
     row_hash: "1e2d3c4b5a695878736261504030201f1e2d3c4b5a695878736261504030201f",
     signature: "sig-mock-008",
   },
+  {
+    sequence_n: 9,
+    ts: ts(35),
+    actor: "service:detect-tabular",
+    action: "signal.detected",
+    payload: {
+      decision_id: "dec-004",
+      metric: "psi_credit_history_length",
+      value: 0.16,
+      baseline: 0.04,
+      severity: "MEDIUM",
+    },
+    prev_hash: "1e2d3c4b5a695878736261504030201f1e2d3c4b5a695878736261504030201f",
+    row_hash: "47b91c3d8e2f50617283940a1b2c3d4e47b91c3d8e2f50617283940a1b2c3d4e",
+    signature: "sig-mock-009",
+  },
+  {
+    sequence_n: 10,
+    ts: ts(33),
+    actor: "service:control-plane",
+    action: "decision.opened",
+    payload: { decision_id: "dec-004", state: "detected", severity: "MEDIUM" },
+    prev_hash: "47b91c3d8e2f50617283940a1b2c3d4e47b91c3d8e2f50617283940a1b2c3d4e",
+    row_hash: "5c802d4e9f3a6172839405b1c2d3e4f55c802d4e9f3a6172839405b1c2d3e4f5",
+    signature: "sig-mock-010",
+  },
+  {
+    sequence_n: 11,
+    ts: ts(28),
+    actor: "service:causal-attrib",
+    action: "decision.analyzed",
+    payload: {
+      decision_id: "dec-004",
+      root_causes: 2,
+      top_contributor: "channel_change.refinance_partners",
+    },
+    prev_hash: "5c802d4e9f3a6172839405b1c2d3e4f55c802d4e9f3a6172839405b1c2d3e4f5",
+    row_hash: "6d913e5fa04b72839450c2d3e4f506166d913e5fa04b72839450c2d3e4f50616",
+    signature: "sig-mock-011",
+  },
+  {
+    sequence_n: 12,
+    ts: ts(22),
+    actor: "service:action-selector",
+    action: "decision.planned",
+    payload: {
+      decision_id: "dec-004",
+      pareto_front: 2,
+      selected_action: "retrain-include-refinance",
+    },
+    prev_hash: "6d913e5fa04b72839450c2d3e4f506166d913e5fa04b72839450c2d3e4f50616",
+    row_hash: "7ea24f60b15c83940561d3e4f51627277ea24f60b15c83940561d3e4f5162727",
+    signature: "sig-mock-012",
+  },
+  {
+    sequence_n: 13,
+    ts: ts(20),
+    actor: "service:control-plane",
+    action: "approval.requested",
+    payload: {
+      decision_id: "dec-004",
+      required_role: "operator",
+      action: "retrain-include-refinance",
+    },
+    prev_hash: "7ea24f60b15c83940561d3e4f51627277ea24f60b15c83940561d3e4f5162727",
+    row_hash: "8fb35071c26d94a51672e4f50617383888fb35071c26d94a51672e4f50617383888",
+    signature: "sig-mock-013",
+  },
+  {
+    sequence_n: 14,
+    ts: ts(12),
+    actor: "service:detect-tabular",
+    action: "signal.detected",
+    payload: {
+      decision_id: "dec-005",
+      metric: "calibration_ece_diabetes_subgroup",
+      value: 0.082,
+      baseline: 0.041,
+      severity: "CRITICAL",
+    },
+    prev_hash: "8fb35071c26d94a51672e4f50617383888fb35071c26d94a51672e4f50617383888",
+    row_hash: "90c46182d37ea5b62783f5061728494990c46182d37ea5b62783f50617284949",
+    signature: "sig-mock-014",
+  },
+  {
+    sequence_n: 15,
+    ts: ts(11),
+    actor: "service:control-plane",
+    action: "decision.opened",
+    payload: { decision_id: "dec-005", state: "detected", severity: "CRITICAL" },
+    prev_hash: "90c46182d37ea5b62783f5061728494990c46182d37ea5b62783f50617284949",
+    row_hash: "a1d57293e48fb6c73894061839505a5aa1d57293e48fb6c73894061839505a5a",
+    signature: "sig-mock-015",
+  },
+  {
+    sequence_n: 16,
+    ts: ts(9),
+    actor: "service:causal-attrib",
+    action: "decision.analyzed",
+    payload: {
+      decision_id: "dec-005",
+      root_causes: 3,
+      top_contributor: "label_shift.30day_readmit_rate",
+    },
+    prev_hash: "a1d57293e48fb6c73894061839505a5aa1d57293e48fb6c73894061839505a5a",
+    row_hash: "b2e683a4f59a07d84905172940616b6bb2e683a4f59a07d84905172940616b6b",
+    signature: "sig-mock-016",
+  },
+  {
+    sequence_n: 17,
+    ts: ts(8),
+    actor: "service:action-selector",
+    action: "decision.planned",
+    payload: { decision_id: "dec-005", pareto_front: 2, selected_action: "shadow-recalibrate" },
+    prev_hash: "b2e683a4f59a07d84905172940616b6bb2e683a4f59a07d84905172940616b6b",
+    row_hash: "c3f794b50a6b18e95a16283051727c7cc3f794b50a6b18e95a16283051727c7c",
+    signature: "sig-mock-017",
+  },
+  {
+    sequence_n: 18,
+    ts: ts(8),
+    actor: "service:control-plane",
+    action: "approval.requested",
+    payload: { decision_id: "dec-005", required_role: "admin", action: "shadow-recalibrate" },
+    prev_hash: "c3f794b50a6b18e95a16283051727c7cc3f794b50a6b18e95a16283051727c7c",
+    row_hash: "d40805c61b7c29fa6b27394162838d8dd40805c61b7c29fa6b27394162838d8d",
+    signature: "sig-mock-018",
+  },
 ];
 
 // ──────────── Activity feed ────────────
@@ -674,6 +935,42 @@ const ACTIVITY: readonly ActivityEvent[] = [
     summary: "Policy v3 dry-run · DP_gender floor raised to 0.85",
     actor: "user:james.wu@aegis.dev",
   },
+  {
+    id: "act-011",
+    ts: ts(35),
+    kind: "signal_detected",
+    model_id: "credit-v1",
+    severity: "MEDIUM",
+    summary: "Credit-history PSI breach (0.16) detected · refinance cohort",
+    actor: "detect-tabular",
+  },
+  {
+    id: "act-012",
+    ts: ts(20),
+    kind: "approval_requested",
+    model_id: "credit-v1",
+    decision_id: "dec-004",
+    summary: "Approval requested · operator · retrain-include-refinance",
+    actor: "control-plane",
+  },
+  {
+    id: "act-013",
+    ts: ts(12),
+    kind: "signal_detected",
+    model_id: "readmission-v1",
+    severity: "CRITICAL",
+    summary: "Calibration drift (ECE 0.082) detected · Medicaid Type-2 diabetes",
+    actor: "detect-tabular",
+  },
+  {
+    id: "act-014",
+    ts: ts(8),
+    kind: "approval_requested",
+    model_id: "readmission-v1",
+    decision_id: "dec-005",
+    summary: "Approval requested · admin · shadow-recalibrate",
+    actor: "control-plane",
+  },
 ];
 
 // ──────────── Datasets ────────────
@@ -690,6 +987,56 @@ const DATASETS: readonly Dataset[] = [
     row_count: 12_400_000,
     snapshot_id: "snap-hmda-2022-q4",
     model_ids: ["credit-v1"],
+    datasheet: {
+      motivation:
+        "Created under the Home Mortgage Disclosure Act (12 USC 2801) so regulators, researchers, and the public can detect discriminatory mortgage-lending patterns. The CFPB publishes the dataset annually as the canonical source of US mortgage-lending demographics.",
+      composition:
+        "12.4M loan-application records from 5,479 reporting lenders. Each record covers loan type, amount, applicant income, race, ethnicity, gender, age, and action taken (originated / denied / withdrawn / approved-not-accepted).",
+      collection:
+        "Reporting institutions submit each calendar year via the LAR specification; CFPB validates, anonymises geographies, and publishes a public LAR snapshot. The dataset captures only HMDA-reportable institutions (most depository lenders + larger non-banks).",
+      uses: "Recommended for fairness auditing of consumer-credit models, demographic-disparity research, and regulatory benchmarking. NOT recommended for individual-level credit-score training without additional features (HMDA omits FICO and full debt history).",
+      sensitive_attributes: [
+        "applicant_race",
+        "applicant_ethnicity",
+        "applicant_sex",
+        "applicant_age",
+      ],
+      maintenance:
+        "Refreshed annually by CFPB. Aegis pulls the latest published snapshot every January and pins the previous year's hash for backward reproducibility.",
+    },
+    schema: [
+      { column: "loan_amount", type: "numeric", hint: "USD, integer" },
+      { column: "applicant_income_thousands", type: "numeric", hint: "USD ÷ 1000" },
+      { column: "applicant_race", type: "categorical", hint: "9-class HMDA spec" },
+      { column: "applicant_sex", type: "categorical", hint: "male / female / non-binary / na" },
+      { column: "applicant_age", type: "categorical", hint: "10-year buckets" },
+      { column: "action_taken", type: "categorical", hint: "originated / denied / …" },
+      { column: "credit_history_length_years", type: "numeric" },
+      { column: "loan_to_income_ratio", type: "numeric" },
+    ],
+    snapshots: [
+      {
+        id: "snap-hmda-2022-q4",
+        created_at: ts(60 * 24 * 7),
+        row_count: 12_402_104,
+        psi_vs_baseline: 0,
+        note: "active baseline",
+      },
+      {
+        id: "snap-hmda-2022-q3",
+        created_at: ts(60 * 24 * 30),
+        row_count: 9_104_882,
+        psi_vs_baseline: 0.04,
+        note: "rolling release",
+      },
+      {
+        id: "snap-hmda-2021-final",
+        created_at: ts(60 * 24 * 90),
+        row_count: 11_812_044,
+        psi_vs_baseline: 0.13,
+        note: "annual diff vs 2022",
+      },
+    ],
   },
   {
     id: "ds-jigsaw",
@@ -702,6 +1049,42 @@ const DATASETS: readonly Dataset[] = [
     row_count: 159_571,
     snapshot_id: "snap-jigsaw-2024-train",
     model_ids: ["toxicity-v1"],
+    datasheet: {
+      motivation:
+        "Released by Jigsaw and Conversation AI to encourage open research on detecting toxic and abusive online content. Anchored two influential Kaggle competitions in 2018 and 2019.",
+      composition:
+        "159,571 Wikipedia talk-page comments, each multi-labelled across six categories (toxic, severe_toxic, obscene, threat, insult, identity_hate). Comments range from a few words to multi-paragraph posts.",
+      collection:
+        "Sampled from Wikipedia talk pages and crowd-labelled by trained annotators. The dataset reflects the 2017–2018 Wikipedia community style and is known to over-represent certain demographic biases (Sap et al. ACL 2019).",
+      uses: "Suitable for training and benchmarking content-moderation classifiers. NOT suitable for production deployment without subgroup audits — the dataset is documented to have higher false-positive rates on AAVE and identity-mention dialects.",
+      sensitive_attributes: ["identity_terms_mentioned", "dialect (proxied via lexicon)"],
+      maintenance:
+        "No active maintenance from Jigsaw. Aegis pins the canonical 2019 train split and applies our own annotator-bias adjustment for AAVE samples.",
+    },
+    schema: [
+      { column: "comment_text", type: "text", hint: "raw UTF-8" },
+      { column: "comment_length_tokens", type: "numeric", hint: "DistilBERT tokens" },
+      { column: "label_toxic", type: "binary" },
+      { column: "label_severe_toxic", type: "binary" },
+      { column: "label_obscene", type: "binary" },
+      { column: "label_identity_hate", type: "binary" },
+    ],
+    snapshots: [
+      {
+        id: "snap-jigsaw-2024-train",
+        created_at: ts(60 * 24 * 60),
+        row_count: 159_571,
+        psi_vs_baseline: 0,
+        note: "active baseline",
+      },
+      {
+        id: "snap-jigsaw-2024-eval",
+        created_at: ts(60 * 24 * 60),
+        row_count: 63_978,
+        psi_vs_baseline: 0.02,
+        note: "eval split",
+      },
+    ],
   },
   {
     id: "ds-diabetes-130us",
@@ -714,6 +1097,46 @@ const DATASETS: readonly Dataset[] = [
     row_count: 101_766,
     snapshot_id: "snap-diabetes-130us-baseline",
     model_ids: ["readmission-v1"],
+    datasheet: {
+      motivation:
+        "Published in 2014 to support research on the impact of HbA1c measurement on hospital readmission rates among diabetes patients. Strack et al., BioMed Research International (2014).",
+      composition:
+        "101,766 inpatient encounters across 130 US hospitals (1999–2008). 50 features per encounter — demographics, prior visit counts, medications, primary/secondary diagnoses (ICD-9), labs, length of stay, discharge disposition, and a 30-day readmission flag.",
+      collection:
+        "Extracted from the Health Facts database (Cerner Corporation). Restricted to inpatient encounters where the patient was diabetic and stayed 1–14 days. De-identified per HIPAA Safe Harbor before release.",
+      uses: "Recommended for clinical risk-prediction research and educational use. NOT recommended for live clinical deployment — the dataset reflects 1999–2008 care patterns, ICD-9 coding, and pre-ACA payment incentives.",
+      sensitive_attributes: ["race", "gender", "age_group", "insurance_payer"],
+      maintenance:
+        "Static. Aegis treats the UCI release as immutable; new encounters are sourced from a synthetic emulator that respects the original distributional properties.",
+    },
+    schema: [
+      { column: "encounter_id", type: "id" },
+      { column: "patient_nbr", type: "id" },
+      { column: "race", type: "categorical" },
+      { column: "gender", type: "categorical" },
+      { column: "age_group", type: "categorical", hint: "10-year buckets" },
+      { column: "num_lab_procedures", type: "numeric" },
+      { column: "num_medications", type: "numeric" },
+      { column: "n_outpatient_visits", type: "numeric" },
+      { column: "diag_1", type: "categorical", hint: "ICD-9 primary" },
+      { column: "readmitted_30d", type: "binary" },
+    ],
+    snapshots: [
+      {
+        id: "snap-diabetes-130us-baseline",
+        created_at: ts(60 * 24 * 30),
+        row_count: 101_766,
+        psi_vs_baseline: 0,
+        note: "frozen UCI release",
+      },
+      {
+        id: "snap-diabetes-130us-medicaid-cohort",
+        created_at: ts(12),
+        row_count: 18_402,
+        psi_vs_baseline: 0.21,
+        note: "synthetic Medicaid Type-2 cohort — driving incident dec-005",
+      },
+    ],
   },
 ];
 
@@ -779,6 +1202,68 @@ actions:
 `,
     created_at: ts(60 * 24 * 9),
     created_by: "team-trust-safety",
+  },
+  {
+    id: "pol-readmission-v1-active",
+    model_id: "readmission-v1",
+    version: 4,
+    active: true,
+    mode: "live",
+    dsl_yaml: `# Aegis policy DSL — readmission-v1
+version: 4
+mode: live
+triggers:
+  - metric: calibration_ece
+    subgroup: condition
+    ceiling: 0.05
+    window: 24h
+    severity: CRITICAL
+  - metric: auc
+    floor: 0.75
+    window: 6h
+    severity: HIGH
+  - metric: calibration_recalibrated_at
+    max_age: 14d
+    severity: MEDIUM
+actions:
+  on_CRITICAL:
+    - require_approval: admin
+    - propose: [shadow_recalibrate, freeze_cohort_routing]
+  on_HIGH:
+    - require_approval: admin
+    - propose: [shadow_recalibrate]
+  on_MEDIUM:
+    - propose: [recalibrate_isotonic]
+`,
+    created_at: ts(60 * 24 * 21),
+    created_by: "team-clinical-ai",
+  },
+  {
+    id: "pol-credit-v1-v2-historical",
+    model_id: "credit-v1",
+    version: 2,
+    active: false,
+    mode: "live",
+    dsl_yaml: `# Aegis policy DSL — credit-v1 (historical)
+version: 2
+mode: live
+triggers:
+  - metric: demographic_parity_ratio
+    subgroup: gender
+    floor: 0.75
+    window: 1h
+    severity: MEDIUM
+  - metric: psi
+    feature: applicant_income_thousands
+    ceiling: 0.30
+    window: 24h
+    severity: MEDIUM
+actions:
+  on_MEDIUM:
+    - propose: [retrain_stratified, threshold_adjust]
+`,
+    created_at: ts(60 * 24 * 60),
+    created_by: "james.wu@aegis.dev",
   },
 ];
 
