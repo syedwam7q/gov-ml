@@ -21,7 +21,7 @@ from aegis_control_plane.db import get_session
 from aegis_control_plane.orm import ModelRow, PolicyRow
 from aegis_shared.schemas import Policy
 
-router = APIRouter(prefix="/api/v1/policies", tags=["policies"])
+router = APIRouter(prefix="/api/cp/policies", tags=["policies"])
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 

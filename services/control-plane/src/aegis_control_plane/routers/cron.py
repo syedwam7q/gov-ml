@@ -33,7 +33,7 @@ from aegis_control_plane.db import get_session
 from aegis_control_plane.orm import ModelRow
 from aegis_shared.types import ModelFamily
 
-router = APIRouter(prefix="/api/v1/internal/cron", tags=["cron"])
+router = APIRouter(prefix="/api/cp/internal/cron", tags=["cron"])
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 

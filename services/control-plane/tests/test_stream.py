@@ -71,7 +71,7 @@ async def test_broadcast_endpoint_rejects_missing_token(
 ) -> None:
     async with app_with_secret as ac:
         resp = await ac.post(
-            "/api/v1/internal/broadcast",
+            "/api/cp/internal/broadcast",
             json={"type": "test", "data": {"k": 1}},
         )
     assert resp.status_code == 401
@@ -84,7 +84,7 @@ async def test_broadcast_endpoint_rejects_wrong_token(
 ) -> None:
     async with app_with_secret as ac:
         resp = await ac.post(
-            "/api/v1/internal/broadcast",
+            "/api/cp/internal/broadcast",
             json={"type": "test", "data": {"k": 1}},
             headers={"x-aegis-token": "obviously-wrong"},
         )
@@ -99,7 +99,7 @@ async def test_broadcast_endpoint_accepts_correct_token(
     token = _expected_token(event, "test-secret-do-not-use")
     async with app_with_secret as ac:
         resp = await ac.post(
-            "/api/v1/internal/broadcast",
+            "/api/cp/internal/broadcast",
             json={"type": "test", "data": {"k": 1}},
             headers={"x-aegis-token": token},
         )

@@ -20,7 +20,7 @@ from aegis_control_plane.orm import GovernanceDecisionRow, ModelRow
 from aegis_shared.schemas import GovernanceDecision
 from aegis_shared.types import DecisionState, Severity
 
-router = APIRouter(prefix="/api/v1/decisions", tags=["decisions"])
+router = APIRouter(prefix="/api/cp/decisions", tags=["decisions"])
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 

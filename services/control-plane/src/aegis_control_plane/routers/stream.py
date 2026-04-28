@@ -21,7 +21,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from aegis_control_plane.config import get_settings
 
-router = APIRouter(prefix="/api/v1", tags=["stream"])
+router = APIRouter(prefix="/api/cp", tags=["stream"])
 
 
 class StreamEvent(BaseModel):

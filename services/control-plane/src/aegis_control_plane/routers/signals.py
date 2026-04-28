@@ -26,7 +26,7 @@ from aegis_control_plane.orm import GovernanceDecisionRow
 from aegis_shared.schemas import DriftSignal, GovernanceDecision
 from aegis_shared.types import DecisionState, Severity
 
-router = APIRouter(prefix="/api/v1/signals", tags=["signals"])
+router = APIRouter(prefix="/api/cp/signals", tags=["signals"])
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
