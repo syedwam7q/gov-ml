@@ -22,6 +22,23 @@ const nextConfig = {
       },
     ]);
   },
+  // Local development: proxy /api/cp/* and /api/cp/stream to the FastAPI
+  // dev server so the browser sees a single same-origin path. Production
+  // routing is owned by vercel.ts — this block is dev-only.
+  rewrites() {
+     
+    const env = globalThis.process?.env ?? {};
+    if (env.NODE_ENV !== "development") {
+      return Promise.resolve([]);
+    }
+    const target = (env.AEGIS_CONTROL_PLANE_DEV_URL ?? "http://127.0.0.1:8000").replace(
+      /\/$/,
+      "",
+    );
+    return Promise.resolve([
+      { source: "/api/cp/:path*", destination: `${target}/api/cp/:path*` },
+    ]);
+  },
 };
 
 export default nextConfig;
