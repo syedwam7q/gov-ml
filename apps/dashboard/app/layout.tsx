@@ -1,3 +1,4 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Source_Serif_4 } from "next/font/google";
 import type { ReactNode } from "react";
@@ -79,14 +80,40 @@ interface RootLayoutProps {
 }
 
 export default function RootLayout({ children }: RootLayoutProps) {
+  // ClerkProvider wraps the whole app so <SignedIn />, <SignedOut />,
+  // <UserButton />, and the auth-aware proxy.ts middleware all share
+  // the same client. Editorial Dark theme variables make the
+  // SignIn / SignUp / UserButton popovers read like the rest of the
+  // dashboard rather than a default Clerk modal.
   return (
-    <html
-      lang="en"
-      data-theme="dark"
-      className={`${inter.variable} ${mono.variable} ${serif.variable}`}
-      suppressHydrationWarning
+    <ClerkProvider
+      appearance={{
+        variables: {
+          colorPrimary: "#7fb4ff",
+          colorBackground: "#14141a",
+          colorInputBackground: "#1c1c24",
+          colorInputText: "#e8e8ec",
+          colorText: "#e8e8ec",
+          colorTextSecondary: "#a1a1a8",
+          colorNeutral: "#a1a1a8",
+          colorDanger: "#f87171",
+          borderRadius: "8px",
+          fontFamily: "var(--aegis-font-sans)",
+        },
+        elements: {
+          card: "bg-aegis-surface-overlay border border-aegis-stroke-strong",
+          formButtonPrimary: "bg-aegis-accent hover:bg-aegis-accent-strong text-aegis-bg",
+        },
+      }}
     >
-      <body className="min-h-[100dvh] bg-aegis-bg text-aegis-fg antialiased">{children}</body>
-    </html>
+      <html
+        lang="en"
+        data-theme="dark"
+        className={`${inter.variable} ${mono.variable} ${serif.variable}`}
+        suppressHydrationWarning
+      >
+        <body className="min-h-[100dvh] bg-aegis-bg text-aegis-fg antialiased">{children}</body>
+      </html>
+    </ClerkProvider>
   );
 }
