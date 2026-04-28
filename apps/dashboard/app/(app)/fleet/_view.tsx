@@ -15,6 +15,7 @@ import {
 import { useActivity, useFleetKPIs, useModels } from "../../_lib/hooks";
 import { compactInt, metricValue, relativeTime } from "../../_lib/format";
 import type { ActivityEvent, AegisModel, ModelKPI } from "../../_lib/types";
+import { DemoButton } from "../_components/demo-button";
 
 interface FleetViewProps {
   readonly models: readonly AegisModel[];
@@ -52,15 +53,18 @@ export function FleetView({
 
   return (
     <section className="mx-auto flex w-full max-w-aegis-content flex-col gap-8 px-6 py-8">
-      <header className="flex flex-col gap-2">
-        <p className="aegis-mono-label">FLEET · 24H</p>
-        <h1 className="text-aegis-2xl font-semibold tracking-aegis-tight text-aegis-fg">
-          Fleet overview
-        </h1>
-        <p className="max-w-2xl text-aegis-sm text-aegis-fg-2">
-          Three production models under continuous Aegis governance. Headline metrics, severity
-          rollup, and the live MAPE-K activity stream — everything refreshing in place.
-        </p>
+      <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="flex flex-col gap-2">
+          <p className="aegis-mono-label">FLEET · 24H</p>
+          <h1 className="text-aegis-2xl font-semibold tracking-aegis-tight text-aegis-fg">
+            Fleet overview
+          </h1>
+          <p className="max-w-2xl text-aegis-sm text-aegis-fg-2">
+            Three production models under continuous Aegis governance. Headline metrics, severity
+            rollup, and the live MAPE-K activity stream — everything refreshing in place.
+          </p>
+        </div>
+        <DemoButton />
       </header>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
