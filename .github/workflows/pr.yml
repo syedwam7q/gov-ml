@@ -36,7 +36,7 @@ jobs:
       - run: pnpm test
 
   python:
-    name: Python · lint + typecheck + test
+    name: Python · lint + typecheck + test (with NLP)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +46,9 @@ jobs:
       - uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
-      - run: uv sync --all-packages --frozen
+      # Install everything including the [nlp] optional extras so the toxicity
+      # smoke test runs in CI. ~700 MB extra download, cached after first run.
+      - run: uv sync --all-packages --frozen --extra nlp
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run pyright
