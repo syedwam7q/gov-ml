@@ -51,6 +51,10 @@ export const config: VercelConfig = {
     // Phase 7 — action-selector worker under /api/select/*. Read by the
     // control plane (server-side) at ACTION_SELECTOR_URL.
     { source: "/api/select/:path*", destination: "/services/action-selector/api/:path*" },
+    // Phase 8 — Governance Assistant under /api/assistant/*. Reached
+    // by the dashboard (browser) for the /chat page and the Cmd+K
+    // drawer. The service hosts /chat/stream (SSE) + /healthz.
+    { source: "/api/assistant/:path*", destination: "/services/assistant/api/:path*" },
   ],
   redirects: [],
   headers: [
