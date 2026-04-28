@@ -101,11 +101,70 @@ Each pipeline has a smoke test at `tests/test_smoke.py` that exercises the full 
 
 > **First-run pinning:** every pipeline's `config.py` has a placeholder SHA-256. The first `01_download.py` run will fail with the actual hash; paste it back into `config.py` and re-run. This is the deliberate reproducibility workflow.
 
+### Control plane (Phase 2)
+
+The FastAPI orchestrator that owns the audit log and exposes `/api/v1/*`.
+
+**One-time provisioning (free tiers, $0):**
+
+1.  **Neon Postgres** — sign up at <https://console.neon.tech>, create a project named `aegis`, then create two branches: `main` (production) and `dev` (local). Copy the **async** connection string for each branch:
+
+        postgresql+asyncpg://user:pass@ep-xxx.region.aws.neon.tech/aegis?sslmode=require
+
+    Paste the dev one into `.env` as `DATABASE_URL`.
+
+2.  **HMAC secrets** — generate locally:
+
+    openssl rand -hex 32 >> .env # then prefix with `INTER_SERVICE_HMAC_SECRET=`
+    openssl rand -hex 64 >> .env # then prefix with `AUDIT_LOG_HMAC_SECRET=`
+
+3.  **Apply migrations to your dev branch:**
+
+        cd services/control-plane
+        PATH=$HOME/.local/bin:$PATH uv run alembic upgrade head
+
+    To preview the SQL without touching the database, run with `--sql`:
+
+        PATH=$HOME/.local/bin:$PATH uv run alembic upgrade --sql head
+
+**Run the control plane locally:**
+
+    cd services/control-plane
+    PATH=$HOME/.local/bin:$PATH uv run uvicorn aegis_control_plane.app:app --reload --port 8000
+
+Then:
+
+    curl -s localhost:8000/healthz | jq
+    curl -s localhost:8000/readyz  | jq
+    open  localhost:8000/docs        # FastAPI's auto-generated OpenAPI UI
+
+**Apply Tinybird configuration (Phase 2 wiring; not strictly required until Phase 3):**
+
+    brew install tinybirdco/tinybird/tinybird-cli   # macOS; `pip install tinybird-cli` on Linux
+    tb auth                                          # paste your workspace token
+    cd infra/tinybird && tb push --force
+
+That uploads every `.datasource` / `.pipe` / `.endpoint` to Tinybird — the dashboard will read from the resulting REST endpoints once Phase 3 starts emitting signals.
+
 ## Test
 
     pnpm test          # vitest across @aegis/shared-ts and @aegis/ui
-    uv run pytest -v   # pytest across packages/shared-py and tests/
+    uv run pytest -v   # pytest across packages/shared-py + ml-pipelines + control-plane
+
+Tests that need a live Postgres are auto-skipped if `DATABASE_URL` is unset.
 
 ## Deploy
 
-Deployment to Vercel + Hugging Face Spaces lands in Phase 2 (control plane) and Phase 4 (dashboard).
+**Control plane → Vercel Functions Python.** Once you've linked the repo to Vercel (`vercel link` then `vercel`), set the production environment variables (Project Settings → Environment Variables):
+
+| Var                                                             | Source                                            |
+| --------------------------------------------------------------- | ------------------------------------------------- |
+| `DATABASE_URL`                                                  | Neon `main` branch async connection string        |
+| `AUDIT_LOG_HMAC_SECRET`                                         | `openssl rand -hex 64` (rotate yearly)            |
+| `INTER_SERVICE_HMAC_SECRET`                                     | `openssl rand -hex 32`                            |
+| `EMERGENCY_STOP`                                                | `false` (admin sets to `true` from the dashboard) |
+| Plus everything from `.env.example` (Clerk, Tinybird, HF, Groq) |
+
+**Dashboard → Vercel** (Phase 4) and **HF Spaces → toxicity service** (Phase 4) follow.
+
+The full mapping of routes to deployment targets is in `vercel.ts` (typed config; comments in the file).

@@ -1,0 +1,25 @@
+DESCRIPTION >
+    Rolling drift signals per model + metric over the requested window.
+    The dashboard's drift sparkline calls this once per model panel.
+
+NODE drift_window
+DESCRIPTION >
+    Bucket signals into 5-minute windows over the requested time range.
+
+SQL >
+    %
+    SELECT
+        toStartOfInterval(ts, INTERVAL 5 MINUTE) AS bucket,
+        model_id,
+        metric,
+        avg(value) AS value,
+        max(severity) AS severity
+    FROM signals
+    WHERE
+        model_id = {{ String(model_id, required=True) }}
+        AND ts >= now() - INTERVAL {{ Int32(window_hours, 24) }} HOUR
+        {% if defined(metric) %}
+        AND metric = {{ String(metric) }}
+        {% end %}
+    GROUP BY bucket, model_id, metric
+    ORDER BY bucket ASC

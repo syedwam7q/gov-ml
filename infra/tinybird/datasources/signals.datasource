@@ -1,0 +1,20 @@
+DESCRIPTION >
+    One row per detection signal emitted by detect-tabular / detect-text.
+    Each row is a *signal* — not yet a GovernanceDecision. The control
+    plane consumes the signal stream and decides which signals open a
+    decision (per the active policy DSL).
+
+SCHEMA >
+    `ts`              DateTime64(3, 'UTC') `json:$.ts`,
+    `model_id`        String                `json:$.model_id`,
+    `metric`          String                `json:$.metric`,
+    `value`           Float32               `json:$.value`,
+    `baseline`        Float32               `json:$.baseline`,
+    `severity`        LowCardinality(String) `json:$.severity`,
+    `subgroup`        Nullable(String)      `json:$.subgroup`,
+    `window_secs`     UInt32                `json:$.window_secs`
+
+ENGINE "MergeTree"
+ENGINE_PARTITION_KEY "toYYYYMMDD(ts)"
+ENGINE_SORTING_KEY "model_id, metric, ts"
+ENGINE_TTL "ts + INTERVAL 30 DAY"

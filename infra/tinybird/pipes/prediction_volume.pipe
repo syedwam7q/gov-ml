@@ -1,0 +1,21 @@
+DESCRIPTION >
+    Predictions per hour per model — used by the fleet KPI tile.
+
+NODE prediction_volume
+DESCRIPTION >
+    Hourly count of predictions, optionally filtered by model.
+
+SQL >
+    %
+    SELECT
+        toStartOfHour(ts) AS bucket,
+        model_id,
+        count() AS n
+    FROM predictions
+    WHERE
+        ts >= now() - INTERVAL {{ Int32(window_hours, 24) }} HOUR
+        {% if defined(model_id) %}
+        AND model_id = {{ String(model_id) }}
+        {% end %}
+    GROUP BY bucket, model_id
+    ORDER BY bucket ASC, model_id ASC

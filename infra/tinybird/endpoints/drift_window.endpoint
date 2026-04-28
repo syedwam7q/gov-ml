@@ -1,0 +1,9 @@
+DESCRIPTION >
+    Public REST endpoint serving the drift-window pipe.
+    Dashboard calls this with a read-only token.
+
+TOKEN read_dashboard READ
+
+NODE endpoint
+SQL >
+    SELECT * FROM drift_window

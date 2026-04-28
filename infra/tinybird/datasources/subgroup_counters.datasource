@@ -1,0 +1,22 @@
+DESCRIPTION >
+    Per-subgroup, per-window counts for fairness dashboards.
+    Updated by detection services after each detection cycle — these
+    are the rolled-up numbers the dashboard reads, not the raw
+    per-prediction rows. Aggregated locally before insert.
+
+SCHEMA >
+    `ts`               DateTime64(3, 'UTC') `json:$.ts`,
+    `model_id`         String                `json:$.model_id`,
+    `subgroup_attr`    String                `json:$.subgroup_attr`,
+    `subgroup_value`   String                `json:$.subgroup_value`,
+    `window_secs`      UInt32                `json:$.window_secs`,
+    `n`                UInt64                `json:$.n`,
+    `n_positive`       UInt64                `json:$.n_positive`,
+    `n_predicted_pos`  UInt64                `json:$.n_predicted_pos`,
+    `n_true_positive`  UInt64                `json:$.n_true_positive`,
+    `n_false_positive` UInt64                `json:$.n_false_positive`
+
+ENGINE "MergeTree"
+ENGINE_PARTITION_KEY "toYYYYMMDD(ts)"
+ENGINE_SORTING_KEY "model_id, subgroup_attr, ts"
+ENGINE_TTL "ts + INTERVAL 30 DAY"

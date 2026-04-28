@@ -1,0 +1,26 @@
+DESCRIPTION >
+    Rolling subgroup fairness deltas per model.
+    Used by the dashboard's subgroup-fairness panel and the fleet KPI tiles.
+
+NODE fairness_window
+DESCRIPTION >
+    Compute the demographic-parity delta per subgroup over the window.
+
+SQL >
+    %
+    SELECT
+        toStartOfInterval(ts, INTERVAL 1 HOUR) AS bucket,
+        model_id,
+        subgroup_attr,
+        subgroup_value,
+        sum(n_predicted_pos) / nullIf(sum(n), 0) AS positive_rate,
+        sum(n) AS n
+    FROM subgroup_counters
+    WHERE
+        model_id = {{ String(model_id, required=True) }}
+        AND ts >= now() - INTERVAL {{ Int32(window_hours, 24) }} HOUR
+        {% if defined(subgroup_attr) %}
+        AND subgroup_attr = {{ String(subgroup_attr) }}
+        {% end %}
+    GROUP BY bucket, model_id, subgroup_attr, subgroup_value
+    ORDER BY bucket ASC, subgroup_attr ASC, subgroup_value ASC

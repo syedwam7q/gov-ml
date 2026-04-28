@@ -1,0 +1,20 @@
+DESCRIPTION >
+    One row per ML model inference. Appended by the inference services.
+    The Tinybird ingestion endpoint is /v0/events?name=predictions.
+
+SCHEMA >
+    `ts`              DateTime64(3, 'UTC') `json:$.ts`,
+    `model_id`        String                `json:$.model_id`,
+    `model_version`   String                `json:$.model_version`,
+    `prediction_id`   String                `json:$.prediction_id`,
+    `input_hash`      String                `json:$.input_hash`,
+    `y_pred`          Float32               `json:$.y_pred`,
+    `y_score`         Float32               `json:$.y_score`,
+    `y_true`          Nullable(Float32)     `json:$.y_true`,
+    `latency_ms`      UInt32                `json:$.latency_ms`,
+    `subgroup`        Map(String, String)   `json:$.subgroup`
+
+ENGINE "MergeTree"
+ENGINE_PARTITION_KEY "toYYYYMMDD(ts)"
+ENGINE_SORTING_KEY "model_id, ts"
+ENGINE_TTL "ts + INTERVAL 7 DAY"
