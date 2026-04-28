@@ -11,7 +11,7 @@ import pandas as pd
 from xgboost import XGBClassifier
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from preprocess_lib import (  # noqa: E402
+from credit_preprocess import (  # noqa: E402
     binarize_label,
     drop_missing_critical,
     encode_categoricals,

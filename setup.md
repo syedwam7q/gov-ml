@@ -56,20 +56,33 @@ pnpm test
 
 ### ML pipelines
 
-Each model has its own pipeline directory under `ml-pipelines/`. Phase 1a ships the credit pipeline; readmission and toxicity follow in 1b/1c.
+Each model has its own pipeline directory under `ml-pipelines/`. Phases 1a–1b ship credit and readmission; toxicity follows in 1c.
+
+**Credit (HMDA, Phase 1a):**
 
     cd ml-pipelines/credit
     PATH=$HOME/.local/bin:$PATH uv run python 01_download.py            # downloads HMDA-CA-2017
-    PATH=$HOME/.local/bin:$PATH uv run python 02_preprocess.py          # writes train/val/test parquet
-    PATH=$HOME/.local/bin:$PATH uv run python 03_train.py               # ~2 min on a laptop
-    PATH=$HOME/.local/bin:$PATH uv run python 04_evaluate.py            # writes evaluation.json
-    PATH=$HOME/.local/bin:$PATH uv run python 05_generate_artifacts.py  # writes model card + datasheet
+    PATH=$HOME/.local/bin:$PATH uv run python 02_preprocess.py
+    PATH=$HOME/.local/bin:$PATH uv run python 03_train.py               # ~2 min
+    PATH=$HOME/.local/bin:$PATH uv run python 04_evaluate.py
+    PATH=$HOME/.local/bin:$PATH uv run python 05_generate_artifacts.py
 
-Downloaded raw data lands in `data/raw/credit/` (gitignored). Trained artifacts (model + metrics + model card + datasheet) land in `ml-pipelines/credit/artifacts/`.
+**Readmission (UCI Diabetes 130-US, Phase 1b):**
 
-The smoke test (`tests/test_smoke.py`) exercises the full pipeline on synthetic data in under 2 seconds and runs in CI on every PR.
+    cd ml-pipelines/readmission
+    PATH=$HOME/.local/bin:$PATH uv run python 01_download.py            # downloads + extracts UCI ZIP
+    PATH=$HOME/.local/bin:$PATH uv run python 02_preprocess.py
+    PATH=$HOME/.local/bin:$PATH uv run python 03_train.py               # ~30 s
+    PATH=$HOME/.local/bin:$PATH uv run python 04_evaluate.py
+    PATH=$HOME/.local/bin:$PATH uv run python 05_generate_artifacts.py
+
+Downloaded raw data lands in `data/raw/<model>/` (gitignored). Trained artifacts (model + metrics + model card + datasheet) land in `ml-pipelines/<model>/artifacts/`.
+
+Each pipeline has a smoke test at `tests/test_smoke.py` that exercises the full pipeline on synthetic data in under 2 seconds and runs in CI on every PR.
 
 > **macOS note:** XGBoost requires libomp. Install with `brew install libomp` once.
+
+> **First-run pinning:** every pipeline's `config.py` has a placeholder SHA-256. The first `01_download.py` run will fail with the actual hash; paste it back into `config.py` and re-run. This is the deliberate reproducibility workflow.
 
 ## Test
 

@@ -81,8 +81,9 @@ testpaths = [
   "packages/shared-py/tests",
   "ml-pipelines/_shared/tests",
   "ml-pipelines/credit/tests",
+  "ml-pipelines/readmission/tests",
   "services",
   "tests",
 ]
-addopts = "-ra --strict-markers --strict-config"
+addopts = "-ra --strict-markers --strict-config --import-mode=importlib"
 asyncio_mode = "auto"

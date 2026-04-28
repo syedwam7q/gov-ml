@@ -1,0 +1,32 @@
+{
+  "name": "readmission-v2-dag",
+  "nodes": [
+    "race",
+    "gender",
+    "age",
+    "insurance_payer",
+    "comorbidity_severity",
+    "treatment_intensity",
+    "time_in_hospital",
+    "a1c_test_received",
+    "readmission"
+  ],
+  "edges": [
+    ["race", "insurance_payer"],
+    ["age", "insurance_payer"],
+    ["race", "comorbidity_severity"],
+    ["age", "comorbidity_severity"],
+    ["gender", "comorbidity_severity"],
+    ["insurance_payer", "treatment_intensity"],
+    ["comorbidity_severity", "treatment_intensity"],
+    ["insurance_payer", "a1c_test_received"],
+    ["comorbidity_severity", "a1c_test_received"],
+    ["comorbidity_severity", "time_in_hospital"],
+    ["treatment_intensity", "time_in_hospital"],
+    ["a1c_test_received", "readmission"],
+    ["treatment_intensity", "readmission"],
+    ["time_in_hospital", "readmission"],
+    ["comorbidity_severity", "readmission"]
+  ],
+  "notes": "Hand-curated from Strack et al. 2014, Obermeyer 2019, and the clinical-decisioning literature. Captures the Optum-style failure mode: insurance_payer is a proxy for race that affects treatment intensity, which in turn drives readmission risk. Used by services/causal-attrib (Phase 5) for DoWhy GCM attribution."
+}

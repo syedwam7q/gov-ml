@@ -1,4 +1,4 @@
-"""Read raw HMDA, preprocess, write train/val/test parquet files."""
+"""Read raw Diabetes-130 CSV, preprocess, write train/val/test parquet files."""
 
 from __future__ import annotations
 
@@ -11,43 +11,47 @@ from aegis_pipelines.seed import GLOBAL_SEED, set_global_seed
 
 sys.path.insert(0, str(Path(__file__).parent))
 from config import (  # noqa: E402
-    HMDA_2017_CA_SPEC,
+    CATEGORICAL_FEATURES,
+    DIABETES_CSV_INSIDE_ZIP,
     LABEL_COLUMN,
+    NUMERIC_FEATURES,
     PROCESSED_DIR,
     PROTECTED_FEATURES,
     RAW_DIR,
 )
-from credit_preprocess import (  # noqa: E402
-    binarize_label,
+from readmission_preprocess import (  # noqa: E402
+    binarize_readmission,
     drop_missing_critical,
     encode_categoricals,
+    replace_missing_sentinels,
     stratified_split,
 )
-
-CATEGORICAL_COLS = PROTECTED_FEATURES.copy()
-NUMERIC_COLS = ["income", "loan_amount"]
 
 
 def main() -> int:
     set_global_seed()
-    src = RAW_DIR / HMDA_2017_CA_SPEC.dest_relpath
+    src = RAW_DIR / DIABETES_CSV_INSIDE_ZIP
     if not src.exists():
-        print(f"❌ raw file not found at {src}; run 01_download.py first", file=sys.stderr)
+        print(f"❌ raw CSV not found at {src}; run 01_download.py first", file=sys.stderr)
         return 1
 
     print(f"→ reading {src}")
     df = pd.read_csv(src)
 
-    print(f"→ binarizing label (column={LABEL_COLUMN}, positive=1)")
-    df = binarize_label(df, label_col=LABEL_COLUMN, positive_codes={1})
+    print("→ replacing '?' sentinels with NA")
+    df = replace_missing_sentinels(df)
+
+    print(f"→ binarizing readmission (column={LABEL_COLUMN}, positive=<30)")
+    df = binarize_readmission(df, label_col=LABEL_COLUMN)
 
     print("→ dropping missing critical columns")
     df = drop_missing_critical(df, critical_cols=["label", *PROTECTED_FEATURES])
 
     print("→ encoding categoricals")
-    feature_cols = NUMERIC_COLS + CATEGORICAL_COLS
+    feature_cols = NUMERIC_FEATURES + PROTECTED_FEATURES + CATEGORICAL_FEATURES
     encoded, encoders = encode_categoricals(
-        df[[*feature_cols, "label"]], categorical_cols=CATEGORICAL_COLS
+        df[[*feature_cols, "label"]],
+        categorical_cols=PROTECTED_FEATURES + CATEGORICAL_FEATURES,
     )
 
     print(f"→ stratified split (seed={GLOBAL_SEED})")
