@@ -36,9 +36,11 @@ def test_writer_appends_first_row_with_genesis_prev_hash(hmac_secret: str) -> No
 
 
 def test_writer_chains_consecutive_rows(hmac_secret: str) -> None:
+    from aegis_shared.audit import AuditRow
+
     writer = AuditWriter(secret=hmac_secret)
     state = ChainState.genesis()
-    rows = []
+    rows: list[AuditRow] = []
     for i in range(5):
         row, state = writer.build_row(
             state=state,
@@ -75,9 +77,11 @@ def test_writer_rejects_empty_secret() -> None:
 
 @pytest.mark.parametrize("n", [10, 100])
 def test_writer_long_chains_verify(hmac_secret: str, n: int) -> None:
+    from aegis_shared.audit import AuditRow
+
     writer = AuditWriter(secret=hmac_secret)
     state = ChainState.genesis()
-    rows = []
+    rows: list[AuditRow] = []
     for i in range(n):
         row, state = writer.build_row(
             state=state,
