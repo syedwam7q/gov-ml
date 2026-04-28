@@ -115,7 +115,7 @@ MIT.
 
 ```bash
 git add README.md
-git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsign=false commit -m "docs: add project README"
+git -c user.name="syedwam7q" -c user.email="sdirwamiq@gmail.com" -c commit.gpgsign=false commit -m "docs: add project README"
 ```
 
 ---
@@ -177,7 +177,7 @@ Expected: success with no warnings about missing engines.
 
 ```bash
 git add package.json pnpm-workspace.yaml pnpm-lock.yaml
-git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsign=false commit -m "chore: initialize pnpm workspace"
+git -c user.name="syedwam7q" -c user.email="sdirwamiq@gmail.com" -c commit.gpgsign=false commit -m "chore: initialize pnpm workspace"
 ```
 
 ---
@@ -234,7 +234,7 @@ Expected: turbo CLI help output (confirms turbo is installed).
 
 ```bash
 git add turbo.json package.json pnpm-lock.yaml
-git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsign=false commit -m "chore: configure Turborepo"
+git -c user.name="syedwam7q" -c user.email="sdirwamiq@gmail.com" -c commit.gpgsign=false commit -m "chore: configure Turborepo"
 ```
 
 ---
@@ -260,7 +260,7 @@ description = "Autonomous self-healing governance for ML systems"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.13"
-authors = [{ name = "syedwam7q", email = "engg@airtribe.live" }]
+authors = [{ name = "syedwam7q", email = "sdirwamiq@gmail.com" }]
 
 [tool.uv.workspace]
 members = [
@@ -292,7 +292,7 @@ Expected: success; `.venv/` and `uv.lock` created.
 
 ```bash
 git add pyproject.toml uv.lock
-git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsign=false commit -m "chore: initialize uv Python workspace"
+git -c user.name="syedwam7q" -c user.email="sdirwamiq@gmail.com" -c commit.gpgsign=false commit -m "chore: initialize uv Python workspace"
 ```
 
 ---
@@ -369,7 +369,7 @@ Expected: a version string.
 
 ```bash
 git add pyproject.toml
-git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsign=false commit -m "chore: configure Python tooling (ruff, pyright, pytest)"
+git -c user.name="syedwam7q" -c user.email="sdirwamiq@gmail.com" -c commit.gpgsign=false commit -m "chore: configure Python tooling (ruff, pyright, pytest)"
 ```
 
 ---
@@ -429,7 +429,7 @@ Run: `pnpm add -Dw typescript@^5.6.0 @types/node@^22.0.0`
 
 ```bash
 git add tsconfig.base.json tsconfig.json package.json pnpm-lock.yaml
-git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsign=false commit -m "chore: add root TypeScript configuration"
+git -c user.name="syedwam7q" -c user.email="sdirwamiq@gmail.com" -c commit.gpgsign=false commit -m "chore: add root TypeScript configuration"
 ```
 
 ---
@@ -534,7 +534,7 @@ Expected: `All matched files use Prettier code style!`
 
 ```bash
 git add eslint.config.mjs .prettierrc .prettierignore package.json pnpm-lock.yaml
-git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsign=false commit -m "chore: configure ESLint and Prettier"
+git -c user.name="syedwam7q" -c user.email="sdirwamiq@gmail.com" -c commit.gpgsign=false commit -m "chore: configure ESLint and Prettier"
 ```
 
 ---
@@ -589,7 +589,7 @@ Expected: `sync hooks: ✔️ (pre-commit, pre-push)`
 
 ```bash
 git add lefthook.yml package.json pnpm-lock.yaml
-git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsign=false commit -m "chore: install lefthook pre-commit and pre-push hooks"
+git -c user.name="syedwam7q" -c user.email="sdirwamiq@gmail.com" -c commit.gpgsign=false commit -m "chore: install lefthook pre-commit and pre-push hooks"
 ```
 
 ---
@@ -657,7 +657,7 @@ NODE_ENV=development
 
 ```bash
 git add .env.example
-git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsign=false commit -m "chore: document all environment variables in .env.example"
+git -c user.name="syedwam7q" -c user.email="sdirwamiq@gmail.com" -c commit.gpgsign=false commit -m "chore: document all environment variables in .env.example"
 ```
 
 ---
@@ -861,7 +861,7 @@ Expected: both clean.
 
 ```bash
 git add packages/shared-py/ uv.lock
-git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsign=false commit -m "feat(shared-py): add type enums and base Pydantic model"
+git -c user.name="syedwam7q" -c user.email="sdirwamiq@gmail.com" -c commit.gpgsign=false commit -m "feat(shared-py): add type enums and base Pydantic model"
 ```
 
 ---
@@ -1225,7 +1225,7 @@ Expected: both clean.
 
 ```bash
 git add packages/shared-py/
-git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsign=false commit -m "feat(shared-py): Merkle-chained audit-log primitives with full verification"
+git -c user.name="syedwam7q" -c user.email="sdirwamiq@gmail.com" -c commit.gpgsign=false commit -m "feat(shared-py): Merkle-chained audit-log primitives with full verification"
 ```
 
 ---
@@ -1408,7 +1408,7 @@ Expected: clean.
 
 ```bash
 git add packages/shared-ts/ pnpm-lock.yaml
-git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsign=false commit -m "feat(shared-ts): generate TypeScript types from shared-py JSON Schema"
+git -c user.name="syedwam7q" -c user.email="sdirwamiq@gmail.com" -c commit.gpgsign=false commit -m "feat(shared-ts): generate TypeScript types from shared-py JSON Schema"
 ```
 
 ---
@@ -1544,7 +1544,7 @@ Expected: clean.
 
 ```bash
 git add packages/ui/ pnpm-lock.yaml
-git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsign=false commit -m "feat(ui): scaffold shared component package with cn() utility"
+git -c user.name="syedwam7q" -c user.email="sdirwamiq@gmail.com" -c commit.gpgsign=false commit -m "feat(ui): scaffold shared component package with cn() utility"
 ```
 
 ---
@@ -1667,7 +1667,7 @@ jobs:
 
 ```bash
 git add .github/workflows/
-git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsign=false commit -m "ci: add PR, setup-validator, and chain-anchor workflows"
+git -c user.name="syedwam7q" -c user.email="sdirwamiq@gmail.com" -c commit.gpgsign=false commit -m "ci: add PR, setup-validator, and chain-anchor workflows"
 ```
 
 ---
@@ -1710,7 +1710,7 @@ Expected: only the new `.gitkeep` files; no `__pycache__`, no `.venv`, no `node_
 
 ```bash
 git add apps/ services/ workflows/ ml-pipelines/ data/ infra/ tests/ docs/paper docs/compliance
-git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsign=false commit -m "chore: scaffold directory layout for upcoming phases"
+git -c user.name="syedwam7q" -c user.email="sdirwamiq@gmail.com" -c commit.gpgsign=false commit -m "chore: scaffold directory layout for upcoming phases"
 ```
 
 ---
@@ -1749,7 +1749,7 @@ export default config;
 
 ```bash
 git add vercel.ts package.json pnpm-lock.yaml
-git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsign=false commit -m "chore: add typed vercel.ts project config"
+git -c user.name="syedwam7q" -c user.email="sdirwamiq@gmail.com" -c commit.gpgsign=false commit -m "chore: add typed vercel.ts project config"
 ```
 
 ---
@@ -1834,7 +1834,7 @@ Deployment to Vercel + Hugging Face Spaces lands in Phase 2 (control plane) and 
 
 ```bash
 git add setup.md
-git -c user.name="syedwam7q" -c user.email="engg@airtribe.live" -c commit.gpgsign=false commit -m "docs: add initial setup.md (CI-validated nightly)"
+git -c user.name="syedwam7q" -c user.email="sdirwamiq@gmail.com" -c commit.gpgsign=false commit -m "docs: add initial setup.md (CI-validated nightly)"
 ```
 
 ---
