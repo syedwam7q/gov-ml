@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from aegis_assistant import __version__
+from aegis_assistant.routers import chat as chat_router
 from aegis_assistant.routers import health as health_router
 
 
@@ -19,6 +20,7 @@ def build_app() -> FastAPI:
         ),
     )
     app.include_router(health_router.router)
+    app.include_router(chat_router.router)
     return app
 
 
