@@ -399,6 +399,30 @@ _and_ the caller didn't supply an explicit payload. The Phase 6
 | --------------------- | ----------------------- | -------------------------------------------------------- |
 | `ACTION_SELECTOR_URL` | `http://localhost:8004` | Where the control plane reaches services/action-selector |
 
+## One-shot dev stack — `pnpm start:all`
+
+For day-to-day development (and panel demos) the simplest boot is:
+
+    pnpm start:all
+
+This runs `scripts/start-all.sh` — single terminal, three services
+(`control-plane:8000`, `assistant:8005`, `dashboard:3000`), color-coded
+log prefixes, port pre-flight check, and clean teardown on **Ctrl+C**.
+
+Variants:
+
+    pnpm start:cp-and-assistant   # Skip the dashboard (pure backend dev)
+    pnpm start:assistant-only     # Just the assistant + dashboard talks to a remote control plane
+
+The script also adds `--reload-include='*.env'` to both Python services
+so rotating `GROQ_API_KEY` in `.env` picks up automatically without a
+manual kill-and-restart.
+
+The per-service boot recipes below stay valid — use them when you want
+to iterate on one service in isolation with a debugger attached.
+
+---
+
 ## Phase 8 — Governance Assistant (`services/assistant`)
 
 The Aegis Governance Assistant is a Groq-powered tool-using agent that
@@ -415,12 +439,21 @@ both consume its SSE endpoint.
     export GROQ_MODEL_FAST=llama-3.1-8b-instant        # tool-call decisions
 
     uv sync --all-packages
-    uv run --package aegis-assistant uvicorn aegis_assistant.app:app --port 8005
+    uv run --package aegis-assistant uvicorn aegis_assistant.app:app \
+        --port 8005 --reload \
+        --reload-include='*.py' --reload-include='*.env'
 
 Smoke-test:
 
     curl http://127.0.0.1:8005/healthz
     # → {"ok": true, "service": "assistant", "version": "0.1.0"}
+
+**Why `--reload-include='*.env'`:** `pydantic-settings` reads
+`GROQ_API_KEY` from `.env` once at app boot. uvicorn's `--reload`
+default only watches `*.py`, so rotating the key in `.env` had no
+effect until the operator manually killed and restarted. Adding the
+`.env` glob to the reload watcher means a key edit triggers an app
+reload within ~1 second.
 
 **2. Wire the dashboard:**
 

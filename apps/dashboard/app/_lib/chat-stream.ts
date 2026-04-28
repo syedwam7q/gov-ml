@@ -16,7 +16,7 @@ import { useCallback, useState } from "react";
 
 import type { ChatTurn, ToolCall } from "./types";
 
-type StreamFrame =
+export type StreamFrame =
   | {
       readonly kind: "tool_call_start";
       readonly tool_name: string;
@@ -43,20 +43,46 @@ export interface ChatStreamHook {
   readonly reset: () => void;
 }
 
-function parseFrames(buffer: string): {
+/**
+ * Parse a buffer of accumulated SSE bytes into discrete frames.
+ *
+ * The SSE spec (HTML5 §9.2.6) allows three line terminators: `\r\n`,
+ * `\n`, or `\r` — and the inter-event delimiter is a blank line, so
+ * `\r\n\r\n`, `\n\n`, or any mix. sse_starlette (the Python server
+ * we use for both the control plane's event bus and the assistant's
+ * /chat/stream) emits CRLF; our previous JS parser only split on
+ * `\n\n` and silently dropped every frame in the browser. curl + the
+ * Python smoke probes worked because line iterators normalise line
+ * endings — fetch().body in Chrome/Safari does not.
+ *
+ * Implementation: normalise to `\n` first, then split. The data line
+ * itself can use either `data: ` (with space) or `data:` (no space)
+ * per spec; we accept both.
+ */
+export function parseFrames(buffer: string): {
   readonly frames: readonly StreamFrame[];
   readonly tail: string;
 } {
+  const normalised = buffer.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   const out: StreamFrame[] = [];
-  const events = buffer.split("\n\n");
+  const events = normalised.split("\n\n");
   const tail = events.pop() ?? "";
   for (const ev of events) {
-    const dataLine = ev.split("\n").find((l) => l.startsWith("data: "));
-    if (!dataLine) continue;
+    const lines = ev.split("\n");
+    // SSE permits multi-line data: fields — concatenate them with `\n`
+    // (per spec) before parsing as JSON.
+    const dataParts: string[] = [];
+    for (const line of lines) {
+      if (line.startsWith("data:")) {
+        const value = line.startsWith("data: ") ? line.slice(6) : line.slice(5);
+        dataParts.push(value);
+      }
+    }
+    if (dataParts.length === 0) continue;
     try {
-      out.push(JSON.parse(dataLine.slice(6)) as StreamFrame);
+      out.push(JSON.parse(dataParts.join("\n")) as StreamFrame);
     } catch {
-      // malformed frame — drop
+      // malformed frame — drop and keep streaming
     }
   }
   return { frames: out, tail };

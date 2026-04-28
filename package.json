@@ -15,7 +15,10 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\" --ignore-path .prettierignore",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\" --ignore-path .prettierignore"
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\" --ignore-path .prettierignore",
+    "start:all": "./scripts/start-all.sh",
+    "start:cp-and-assistant": "./scripts/start-all.sh --no-dashboard",
+    "start:assistant-only": "./scripts/start-all.sh --no-cp --no-dashboard"
   },
   "packageManager": "pnpm@10.32.1",
   "devDependencies": {
