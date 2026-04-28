@@ -25,6 +25,22 @@ set -eo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
+# Load .env into the environment so every spawned service inherits the
+# same keys. The dashboard's Clerk middleware crashes on boot if
+# NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is missing; the assistant's groq
+# client returns 503; the control-plane can't reach Postgres. Loading
+# .env here means a fresh `pnpm start:all` works against a populated
+# .env without per-terminal `source`-ing.
+if [ -f "$REPO_ROOT/.env" ]; then
+  set -a
+  # shellcheck disable=SC1090,SC1091
+  source "$REPO_ROOT/.env"
+  set +a
+  echo "▸ Loaded .env"
+else
+  echo "▸ No .env found — services may fail with missing-key errors. Copy .env.example → .env first."
+fi
+
 WANT_CP=1
 WANT_ASSISTANT=1
 WANT_DASHBOARD=1
