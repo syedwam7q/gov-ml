@@ -87,9 +87,14 @@ function getString(payload: unknown, key: string): string | undefined {
   return undefined;
 }
 
+type SubStatus = "idle" | "connecting" | "live" | "closed" | "errored";
+
 export function DemoTheater({ open, demoId, onClose, onComplete }: DemoTheaterProps): ReactNode {
   const [scenes, setScenes] = useState<Record<string, SSEFrame>>({});
   const [activeScene, setActiveScene] = useState<SceneKind>("demo_started");
+  const [subStatus, setSubStatus] = useState<SubStatus>("idle");
+  const [eventCount, setEventCount] = useState(0);
+  const [debugLog, setDebugLog] = useState<readonly string[]>([]);
   const completedRef = useRef(false);
 
   // Reset on open with a fresh demo_id.
@@ -97,6 +102,8 @@ export function DemoTheater({ open, demoId, onClose, onComplete }: DemoTheaterPr
     if (open && demoId) {
       setScenes({});
       setActiveScene("demo_started");
+      setEventCount(0);
+      setDebugLog([`open · demo_id=${demoId.slice(0, 8)}…`]);
       completedRef.current = false;
     }
   }, [open, demoId]);
@@ -112,34 +119,63 @@ export function DemoTheater({ open, demoId, onClose, onComplete }: DemoTheaterPr
   }, [open, onClose]);
 
   // Subscribe to the SSE bus and capture demo_* events for our demo_id.
+  // The `demoId` capture below must be stable for the lifetime of one
+  // demo run — we read it from a ref so the closure inside onMessage
+  // doesn't get a stale value if the component re-renders.
+  const demoIdRef = useRef(demoId);
+  useEffect(() => {
+    demoIdRef.current = demoId;
+  }, [demoId]);
+
   useEffect(() => {
     if (!open || !demoId) return undefined;
     if (typeof window === "undefined" || typeof EventSource === "undefined") {
       return undefined;
     }
+    setSubStatus("connecting");
     const src = new EventSource("/api/cp/stream");
+    src.onopen = (): void => {
+      setSubStatus("live");
+      setDebugLog((p) => [...p, "sse: open"]);
+    };
+    src.onerror = (): void => {
+      setSubStatus("errored");
+      setDebugLog((p) => [...p, "sse: error"]);
+    };
     function onMessage(ev: MessageEvent<string>): void {
+      let frame: SSEFrame;
       try {
-        const frame = JSON.parse(ev.data) as SSEFrame;
-        if (!frame.type.startsWith("demo_")) return;
-        const eventDemoId = getString(frame.data, "demo_id");
-        if (eventDemoId !== demoId) return;
-        setScenes((prev) => ({ ...prev, [frame.type]: frame }));
-        if (SCENE_ORDER.includes(frame.type as SceneKind)) {
-          setActiveScene(frame.type as SceneKind);
-        }
-        if (frame.type === "demo_complete" && !completedRef.current) {
-          completedRef.current = true;
-          onComplete?.();
-        }
+        frame = JSON.parse(ev.data) as SSEFrame;
       } catch {
-        // malformed frame — ignore
+        return;
+      }
+      if (!frame.type.startsWith("demo_")) return;
+      const eventDemoId = getString(frame.data, "demo_id");
+      if (eventDemoId !== demoIdRef.current) {
+        setDebugLog((p) =>
+          [
+            ...p,
+            `skip ${frame.type} · id=${(eventDemoId ?? "?").slice(0, 6)}≠${(demoIdRef.current ?? "?").slice(0, 6)}`,
+          ].slice(-10),
+        );
+        return;
+      }
+      setEventCount((c) => c + 1);
+      setDebugLog((p) => [...p, `recv ${frame.type}`].slice(-10));
+      setScenes((prev) => ({ ...prev, [frame.type]: frame }));
+      if (SCENE_ORDER.includes(frame.type as SceneKind)) {
+        setActiveScene(frame.type as SceneKind);
+      }
+      if (frame.type === "demo_complete" && !completedRef.current) {
+        completedRef.current = true;
+        onComplete?.();
       }
     }
     src.addEventListener("message", onMessage);
     return (): void => {
       src.removeEventListener("message", onMessage);
       src.close();
+      setSubStatus("closed");
     };
   }, [open, demoId, onComplete]);
 
@@ -162,7 +198,13 @@ export function DemoTheater({ open, demoId, onClose, onComplete }: DemoTheaterPr
         tabIndex={-1}
       />
       <div className="relative z-10 mx-4 flex h-[min(800px,92vh)] w-[min(1100px,95vw)] flex-col overflow-hidden rounded-aegis-card border border-aegis-stroke-strong bg-aegis-surface-overlay shadow-2xl">
-        <DemoHeader onClose={onClose} activeScene={activeScene} />
+        <DemoHeader
+          onClose={onClose}
+          activeScene={activeScene}
+          subStatus={subStatus}
+          eventCount={eventCount}
+          debugLog={debugLog}
+        />
         <DemoStage scenes={scenes} activeScene={activeScene} demoId={demoId} />
         <DemoProgressBar activeIndex={progressIndex} />
       </div>
@@ -173,10 +215,23 @@ export function DemoTheater({ open, demoId, onClose, onComplete }: DemoTheaterPr
 function DemoHeader({
   onClose,
   activeScene,
+  subStatus,
+  eventCount,
+  debugLog,
 }: {
   readonly onClose: () => void;
   readonly activeScene: SceneKind;
+  readonly subStatus: SubStatus;
+  readonly eventCount: number;
+  readonly debugLog: readonly string[];
 }): ReactNode {
+  const dotColor: Record<SubStatus, string> = {
+    idle: "bg-aegis-fg-3",
+    connecting: "bg-sev-medium animate-pulse",
+    live: "bg-status-ok",
+    closed: "bg-aegis-fg-3",
+    errored: "bg-sev-high",
+  };
   return (
     <header className="flex items-center justify-between border-b border-aegis-stroke px-6 py-4">
       <div className="flex items-center gap-3">
@@ -188,18 +243,36 @@ function DemoHeader({
             Apple Card 2019 — Live Replay
           </p>
           <p className="font-mono text-[11px] uppercase tracking-aegis-mono text-aegis-fg-3">
-            Stage · {SCENE_LABEL[activeScene]}
+            Stage · {SCENE_LABEL[activeScene]} · {eventCount}/7 events
           </p>
         </div>
       </div>
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close demo"
-        className="rounded-aegis-control border border-aegis-stroke p-2 text-aegis-fg-2 transition-colors hover:bg-aegis-surface-2 hover:text-aegis-fg"
-      >
-        <CloseIcon />
-      </button>
+      <div className="flex items-center gap-3">
+        <details className="relative">
+          <summary className="flex cursor-pointer items-center gap-2 rounded-aegis-control border border-aegis-stroke px-2 py-1 font-mono text-[10px] uppercase tracking-aegis-mono text-aegis-fg-2 hover:text-aegis-fg">
+            <span aria-hidden className={`h-2 w-2 rounded-full ${dotColor[subStatus]}`} />
+            sse · {subStatus}
+          </summary>
+          <div className="absolute right-0 mt-2 w-72 rounded-aegis-control border border-aegis-stroke bg-aegis-surface-overlay-elevated p-3 shadow-2xl">
+            <p className="aegis-mono-label mb-2">DEBUG · LAST 10 EVENTS</p>
+            <ol className="space-y-1 font-mono text-[10px] text-aegis-fg-2">
+              {debugLog.length === 0 ? (
+                <li className="text-aegis-fg-3">no log yet</li>
+              ) : (
+                debugLog.map((line, idx) => <li key={idx}>{line}</li>)
+              )}
+            </ol>
+          </div>
+        </details>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close demo"
+          className="rounded-aegis-control border border-aegis-stroke p-2 text-aegis-fg-2 transition-colors hover:bg-aegis-surface-2 hover:text-aegis-fg"
+        >
+          <CloseIcon />
+        </button>
+      </div>
     </header>
   );
 }
