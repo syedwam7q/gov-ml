@@ -10,7 +10,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "lint": "eslint scripts src tests"
+    "lint": "eslint scripts tests"
   },
   "dependencies": {
     "json-schema-to-typescript": "^15.0.0"

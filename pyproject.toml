@@ -8,10 +8,7 @@ requires-python = ">=3.13"
 authors = [{ name = "syedwam7q", email = "engg@airtribe.live" }]
 
 [tool.uv.workspace]
-members = [
-  "packages/shared-py",
-  "services/*",
-]
+members = ["packages/shared-py"]
 
 [tool.uv]
 package = false
