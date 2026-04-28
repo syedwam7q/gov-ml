@@ -1,0 +1,26 @@
+[project]
+name = "aegis-pipelines"
+version = "0.1.0"
+description = "Shared ML pipeline utilities for Aegis (data download, eval, cards, seeding)"
+requires-python = ">=3.13"
+dependencies = [
+  "aegis-shared",
+  "numpy>=2.1.0",
+  "pandas>=2.2.0",
+  "scikit-learn>=1.5.0",
+  "xgboost>=2.1.0",
+  "fairlearn>=0.11.0",
+  "requests>=2.32.0",
+  "pydantic>=2.10.0",
+  "pyarrow>=18.0.0",
+]
+
+[tool.uv.sources]
+aegis-shared = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aegis_pipelines"]
