@@ -14,15 +14,13 @@ dependencies = [
   "fairlearn>=0.11.0",
 ]
 
-# Evidently and NannyML are pulled in via the [drift] extras in Task 3.
-# They cause platform-specific transitive issues (kaleido 0.2.x has no
-# macOS-arm64 wheel) so we keep them opt-in and document the install in
-# setup.md once Task 3 lands.
-[project.optional-dependencies]
-drift = [
-  "evidently>=0.4.30",
-  "nannyml>=0.13.0",
-]
+# Evidently and NannyML have transitive constraints that are incompatible
+# with the rest of our workspace (NannyML pins xgboost<3.0; Evidently pulls
+# kaleido 0.2.x which has no macOS-arm64 wheel). For Task 3, the detector
+# wraps a custom drift implementation built on scipy + fairlearn (already
+# in the workspace) and NannyML's CBPE is wired through a separate venv at
+# the deployment boundary. See `docs/superpowers/plans/2026-04-28-aegis-phase-3-detection-services.md`
+# Task 3 for the resolution plan.
 
 [tool.uv.sources]
 aegis-shared = { workspace = true }
