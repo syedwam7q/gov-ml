@@ -23,5 +23,15 @@
     ["lexical_polarity", "model_decision"],
     ["identity_terms_present", "model_decision"]
   ],
-  "notes": "Hand-curated from Borkan et al. 2019, Sap et al. 2019, and Dixon et al. 2018. The Sap finding — AAE-dialect text is more often labeled toxic — is encoded as `linguistic_dialect → annotator_pool → raw_label` (annotators systematically misjudge AAE). The Dixon finding — identity terms inflate toxicity scores — is `identity_terms_present → model_decision`. Used by services/causal-attrib (Phase 5) for DoWhy GCM attribution and DBShap fallback (text-level, no full DAG required)."
+  "cause_kinds": {
+    "author_demographics": "proxy_attribute",
+    "topic_context": "upstream_covariate",
+    "identity_terms_present": "proxy_attribute",
+    "linguistic_dialect": "proxy_attribute",
+    "lexical_polarity": "upstream_covariate",
+    "annotator_pool": "proxy_attribute",
+    "raw_label": "conditional_mechanism",
+    "model_decision": "conditional_mechanism"
+  },
+  "notes": "Hand-curated from Borkan et al. 2019, Sap et al. 2019, and Dixon et al. 2018. The Sap finding — AAE-dialect text is more often labeled toxic — is encoded as `linguistic_dialect → annotator_pool → raw_label` (annotators systematically misjudge AAE). The Dixon finding — identity terms inflate toxicity scores — is `identity_terms_present → model_decision`. Used by services/causal-attrib (Phase 6) for DoWhy GCM attribution and DBShap fallback (text-level, no full DAG required). cause_kinds field added in Phase 6."
 }
