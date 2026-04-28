@@ -323,3 +323,39 @@ export interface ComplianceMapping {
     readonly evidence?: string;
   }[];
 }
+
+// ──────────── Governance Assistant (spec §11) ────────────
+
+/**
+ * One executed tool call inside an assistant turn. Mirrors `ToolCall`
+ * from `aegis_shared.schemas`. The dashboard renders these as chips
+ * below the assistant bubble — `result_summary` is what the model saw,
+ * `result_payload` is the full JSON for an "expand" affordance.
+ */
+export interface ToolCall {
+  readonly name: string;
+  readonly arguments: Record<string, unknown>;
+  readonly result_summary: string;
+  readonly result_payload?: unknown;
+  readonly error?: string;
+}
+
+/**
+ * One turn in a Governance Assistant conversation. Mirrors `ChatTurn`
+ * from `aegis_shared.schemas`.
+ */
+export interface ChatTurn {
+  readonly role: "user" | "assistant" | "system" | "tool";
+  readonly content: string;
+  readonly tool_calls?: readonly ToolCall[];
+}
+
+/**
+ * Request body for `POST /api/assistant/chat/stream`. Mirrors
+ * `ChatRequest`. `scope` carries dashboard context (e.g.
+ * `{ decision_id }` when the Cmd+K drawer is opened on /incidents).
+ */
+export interface ChatRequest {
+  readonly messages: readonly ChatTurn[];
+  readonly scope?: Record<string, unknown>;
+}
