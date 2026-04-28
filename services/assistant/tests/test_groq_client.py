@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import pytest
 from aegis_assistant import groq_client
-from aegis_assistant.config import Settings, get_settings
+from aegis_assistant.config import Settings, reset_settings_cache
 
 
 @pytest.fixture(autouse=True)
 def _clear_settings_cache() -> None:
-    """The lru_cache on get_settings() persists across tests; reset it
-    so monkeypatched env vars take effect."""
-    get_settings.cache_clear()
+    """The mtime-aware cache on get_settings() persists across tests;
+    reset it so monkeypatched env vars take effect."""
+    reset_settings_cache()
 
 
 @pytest.mark.asyncio

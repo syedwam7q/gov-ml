@@ -11,7 +11,7 @@ import pytest
 import respx
 from aegis_assistant import groq_client
 from aegis_assistant.app import build_app
-from aegis_assistant.config import Settings, get_settings
+from aegis_assistant.config import Settings
 from fastapi.testclient import TestClient
 
 
@@ -42,7 +42,9 @@ def _parse_sse_data(body: str) -> list[dict[str, Any]]:
 
 @pytest.fixture(autouse=True)
 def _clear_settings_cache() -> None:
-    get_settings.cache_clear()
+    from aegis_assistant.config import reset_settings_cache
+
+    reset_settings_cache()
 
 
 def test_chat_stream_returns_503_without_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
