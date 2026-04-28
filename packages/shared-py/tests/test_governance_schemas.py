@@ -107,3 +107,46 @@ def test_governance_decision_rejects_invalid_window() -> None:
             observation_window_secs=-1,
             opened_at=_now(),
         )
+
+
+# Phase 6 — CausalAttribution gains recommended_action + attribution_quality.
+
+
+def test_causal_attribution_carries_recommended_action_and_quality() -> None:
+    from aegis_shared.schemas import CausalAttribution, CausalRootCause
+    from aegis_shared.types import AttributionQuality
+
+    attrib = CausalAttribution(
+        method="DoWhy GCM",
+        root_causes=[CausalRootCause(node="x", contribution=0.6)],
+        confidence=0.86,
+        recommended_action="REWEIGH",
+        attribution_quality=AttributionQuality.HIGH,
+    )
+    assert attrib.recommended_action == "REWEIGH"
+    assert attrib.attribution_quality is AttributionQuality.HIGH
+
+
+def test_attribution_quality_defaults_to_high() -> None:
+    from aegis_shared.schemas import CausalAttribution, CausalRootCause
+    from aegis_shared.types import AttributionQuality
+
+    attrib = CausalAttribution(
+        method="DoWhy GCM",
+        root_causes=[CausalRootCause(node="x", contribution=1.0)],
+    )
+    assert attrib.attribution_quality is AttributionQuality.HIGH
+    assert attrib.recommended_action is None
+
+
+def test_attribution_quality_degraded_when_dbshap_fallback() -> None:
+    from aegis_shared.schemas import CausalAttribution, CausalRootCause
+    from aegis_shared.types import AttributionQuality
+
+    attrib = CausalAttribution(
+        method="DBShap",
+        root_causes=[CausalRootCause(node="x", contribution=1.0)],
+        attribution_quality=AttributionQuality.DEGRADED,
+    )
+    assert attrib.attribution_quality is AttributionQuality.DEGRADED
+    assert attrib.method == "DBShap"

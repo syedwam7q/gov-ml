@@ -56,3 +56,14 @@ class ModelFamily(StrEnum):
 
     TABULAR = "tabular"
     TEXT = "text"
+
+
+class AttributionQuality(StrEnum):
+    """Confidence band for a CausalAttribution result (Phase 6).
+
+    HIGH: full DoWhy GCM Shapley decomposition succeeded on the model's DAG.
+    DEGRADED: DBShap fallback fired (no DAG, DoWhy timeout, or runtime error).
+    """
+
+    HIGH = "high"
+    DEGRADED = "degraded"

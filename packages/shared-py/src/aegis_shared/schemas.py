@@ -14,7 +14,13 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from aegis_shared.audit import AuditRow as _AuditRow
-from aegis_shared.types import DecisionState, ModelFamily, RiskClass, Severity
+from aegis_shared.types import (
+    AttributionQuality,
+    DecisionState,
+    ModelFamily,
+    RiskClass,
+    Severity,
+)
 
 # Re-export so codegen + downstream services can `from aegis_shared.schemas import AuditRow`.
 AuditRow = _AuditRow
@@ -173,11 +179,22 @@ class CausalAttribution(AegisModel):
 
     Spec §12.1. Method names mirror the attribution backend used so the
     dashboard's Shapley waterfall can label its source provenance.
+
+    `recommended_action` is the primary value of the cause→action mapping
+    (Phase 6 §12.1 paper artifact). It's a string action key that Phase 7's
+    action-selector treats as a prior; the dashboard renders it as a chip
+    on the `/incidents/<id>` decision page.
+
+    `attribution_quality` is `HIGH` for DoWhy GCM successes and
+    `DEGRADED` when the DBShap fallback fired (no DAG, timeout, or
+    DoWhy runtime error).
     """
 
     method: str = Field(min_length=1)  # 'DoWhy GCM' | 'DBShap'
     root_causes: list[CausalRootCause]
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+    recommended_action: str | None = None
+    attribution_quality: AttributionQuality = AttributionQuality.HIGH
 
 
 # -- KPI surface (Tinybird-backed) ------------------------------------------
