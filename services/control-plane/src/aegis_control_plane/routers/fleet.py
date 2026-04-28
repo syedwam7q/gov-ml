@@ -36,7 +36,7 @@ def _kpi_point(row: dict[str, Any]) -> dict[str, Any]:
     return {"t": row["t"], "v": float(row["v"])}
 
 
-def _build_response(
+def build_response_payload(
     rollup: list[dict[str, Any]], sparkline: list[dict[str, Any]], window: str
 ) -> list[dict[str, Any]]:
     """Compose two pipe outputs into `ModelKPI[]` exactly as the dashboard expects."""
@@ -74,7 +74,7 @@ def _build_response(
     return out
 
 
-def _client_or_503() -> TinybirdClient:
+def tinybird_client_or_503() -> TinybirdClient:
     """Build a client or raise 503 if the deployment isn't configured for Tinybird."""
     settings = get_settings()
     if not settings.tinybird_token:
@@ -88,7 +88,7 @@ def _client_or_503() -> TinybirdClient:
 @router.get("/kpi")
 async def list_fleet_kpi(window: Annotated[Window, Query()] = "24h") -> list[dict[str, Any]]:
     """One `ModelKPI` per registered model over the requested window."""
-    async with _client_or_503() as tb:
+    async with tinybird_client_or_503() as tb:
         rollup = await tb.query_endpoint("fleet_kpi", params={"window": window})
         sparkline = await tb.query_endpoint("kpi_sparkline", params={"window": window})
-    return _build_response(rollup, sparkline, window)
+    return build_response_payload(rollup, sparkline, window)

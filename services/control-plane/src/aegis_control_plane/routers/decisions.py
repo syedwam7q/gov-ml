@@ -8,7 +8,7 @@ valid given the current state.
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -144,10 +144,15 @@ async def _maybe_call_causal_attrib(row: GovernanceDecisionRow) -> None:
 
     from aegis_control_plane.config import get_settings  # noqa: PLC0415
 
-    drift = row.drift_signal or {}
-    ref_rows = drift.get("reference_rows") or []
-    cur_rows = drift.get("current_rows") or []
-    target_metric = drift.get("metric", "approval")
+    drift: dict[str, Any] = row.drift_signal or {}
+    ref_rows_raw: object = drift.get("reference_rows") or []
+    cur_rows_raw: object = drift.get("current_rows") or []
+    if not isinstance(ref_rows_raw, list) or not isinstance(cur_rows_raw, list):
+        return
+    ref_rows = cast("list[dict[str, Any]]", ref_rows_raw)
+    cur_rows = cast("list[dict[str, Any]]", cur_rows_raw)
+    target_metric_raw = drift.get("metric", "approval")
+    target_metric = target_metric_raw if isinstance(target_metric_raw, str) else "approval"
     if not ref_rows or not cur_rows:
         return
 
@@ -225,11 +230,11 @@ async def transition_decision(
     import contextlib  # noqa: PLC0415
     import logging  # noqa: PLC0415
 
-    from aegis_control_plane.routers.stream import StreamEvent, _bus  # noqa: PLC0415
+    from aegis_control_plane.routers.stream import StreamEvent, get_bus  # noqa: PLC0415
 
     with contextlib.suppress(Exception):  # broadcast best-effort
         try:
-            await _bus.broadcast(
+            await get_bus().broadcast(
                 StreamEvent(
                     type="state_transition",
                     data={

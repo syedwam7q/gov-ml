@@ -11,7 +11,7 @@ from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from aegis_control_plane.routers.fleet import _build_response, _client_or_503
+from aegis_control_plane.routers.fleet import build_response_payload, tinybird_client_or_503
 
 router = APIRouter(prefix="/api/cp/models", tags=["kpi"])
 
@@ -24,14 +24,14 @@ async def get_model_kpi(
     window: Annotated[Window, Query()] = "24h",
 ) -> dict[str, Any]:
     """One `ModelKPI` for the requested model + window."""
-    async with _client_or_503() as tb:
+    async with tinybird_client_or_503() as tb:
         rollup = await tb.query_endpoint(
             "model_kpi", params={"model_id": model_id, "window": window}
         )
         sparkline = await tb.query_endpoint(
             "kpi_sparkline", params={"model_id": model_id, "window": window}
         )
-    composed = _build_response(rollup, sparkline, window)
+    composed = build_response_payload(rollup, sparkline, window)
     if not composed:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND,
