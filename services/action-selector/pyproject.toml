@@ -12,13 +12,19 @@ dependencies = [
   "pydantic-settings>=2.6.0",
   "numpy>=2.1.0",
   "scipy>=1.14.0",
+  "redis>=5.2.0",
 ]
 
 [tool.uv.sources]
 aegis-shared = { workspace = true }
 
 [dependency-groups]
-dev = ["pytest>=8.3.0", "pytest-asyncio>=0.24.0", "hypothesis>=6.115.0"]
+dev = [
+  "pytest>=8.3.0",
+  "pytest-asyncio>=0.24.0",
+  "hypothesis>=6.115.0",
+  "fakeredis>=2.26.0",
+]
 
 [build-system]
 requires = ["hatchling"]
