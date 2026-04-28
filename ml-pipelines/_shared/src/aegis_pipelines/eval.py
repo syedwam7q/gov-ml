@@ -100,3 +100,76 @@ def subgroup_metrics(
         y_true=y_true, y_pred=y_pred, sensitive=sensitive
     )
     return out
+
+
+# -- Borkan 2019 metrics (Jigsaw Unintended Bias) --------------------------------
+
+
+def subgroup_auc(*, y_true: np.ndarray, y_prob: np.ndarray, subgroup_mask: np.ndarray) -> float:
+    """AUROC restricted to the rows in `subgroup_mask`. Per Borkan et al. 2019.
+
+    Quantifies how well the model separates positives from negatives *within*
+    a single identity subgroup. Low score = model is bad at distinguishing
+    toxic vs non-toxic for this group specifically.
+    """
+    y_true_sub = y_true[subgroup_mask]
+    y_prob_sub = y_prob[subgroup_mask]
+    if len(np.unique(y_true_sub)) < 2:
+        return 0.0
+    return float(roc_auc_score(y_true_sub, y_prob_sub))
+
+
+def bpsn_auc(*, y_true: np.ndarray, y_prob: np.ndarray, subgroup_mask: np.ndarray) -> float:
+    """Background Positive, Subgroup Negative AUROC (Borkan 2019).
+
+    AUROC over (background-positive ∪ subgroup-negative) — captures the rate at
+    which the model false-positively flags non-toxic comments mentioning the
+    subgroup, relative to its true positives outside the subgroup. Low score =
+    the model is biased TOWARD flagging the subgroup.
+    """
+    bg_pos = (~subgroup_mask) & (y_true == 1)
+    sub_neg = subgroup_mask & (y_true == 0)
+    sel = bg_pos | sub_neg
+    if not sel.any():
+        return 0.0
+    y_true_sel = y_true[sel]
+    if len(np.unique(y_true_sel)) < 2:
+        return 0.0
+    return float(roc_auc_score(y_true_sel, y_prob[sel]))
+
+
+def bnsp_auc(*, y_true: np.ndarray, y_prob: np.ndarray, subgroup_mask: np.ndarray) -> float:
+    """Background Negative, Subgroup Positive AUROC (Borkan 2019).
+
+    AUROC over (background-negative ∪ subgroup-positive) — captures the rate at
+    which the model misses toxic comments mentioning the subgroup, relative to
+    its true negatives outside the subgroup. Low score = the model is biased
+    AGAINST flagging the subgroup (false negatives concentrated there).
+    """
+    bg_neg = (~subgroup_mask) & (y_true == 0)
+    sub_pos = subgroup_mask & (y_true == 1)
+    sel = bg_neg | sub_pos
+    if not sel.any():
+        return 0.0
+    y_true_sel = y_true[sel]
+    if len(np.unique(y_true_sel)) < 2:
+        return 0.0
+    return float(roc_auc_score(y_true_sel, y_prob[sel]))
+
+
+def borkan_subgroup_report(
+    *, y_true: np.ndarray, y_prob: np.ndarray, identities: dict[str, np.ndarray]
+) -> dict[str, dict[str, float]]:
+    """Compute (subgroup_AUC, BPSN_AUC, BNSP_AUC) per identity. Borkan et al. 2019.
+
+    `identities` maps an identity name (e.g., "black", "muslim", "female") to a
+    boolean array indicating which rows mention that identity.
+    """
+    report: dict[str, dict[str, float]] = {}
+    for name, mask in identities.items():
+        report[name] = {
+            "subgroup_auc": subgroup_auc(y_true=y_true, y_prob=y_prob, subgroup_mask=mask),
+            "bpsn_auc": bpsn_auc(y_true=y_true, y_prob=y_prob, subgroup_mask=mask),
+            "bnsp_auc": bnsp_auc(y_true=y_true, y_prob=y_prob, subgroup_mask=mask),
+        }
+    return report

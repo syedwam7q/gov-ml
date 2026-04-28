@@ -76,6 +76,23 @@ Each model has its own pipeline directory under `ml-pipelines/`. Phases 1a–1b 
     PATH=$HOME/.local/bin:$PATH uv run python 04_evaluate.py
     PATH=$HOME/.local/bin:$PATH uv run python 05_generate_artifacts.py
 
+**Toxicity (Jigsaw Civil Comments, Phase 1c):**
+
+First install the heavy NLP stack (torch + transformers + datasets):
+
+    PATH=$HOME/.local/bin:$PATH uv sync --all-packages --extra nlp
+
+Then:
+
+    cd ml-pipelines/toxicity
+    PATH=$HOME/.local/bin:$PATH uv run python 01_download.py            # ~5 min, ~600 MB via HF
+    PATH=$HOME/.local/bin:$PATH uv run python 02_preprocess.py
+    PATH=$HOME/.local/bin:$PATH uv run python 03_train.py               # GPU recommended (Colab T4 free tier)
+    PATH=$HOME/.local/bin:$PATH uv run python 04_evaluate.py
+    PATH=$HOME/.local/bin:$PATH uv run python 05_generate_artifacts.py
+
+> **Compute note:** real DistilBERT fine-tuning on the full 1.8M-comment Civil Comments corpus needs a GPU (~6 hours on Colab T4 free tier). The smoke test (`tests/test_toxicity_smoke.py`) uses a 87K-parameter tiny-random DistilBERT and runs on CPU in ~5s; it's what CI exercises.
+
 Downloaded raw data lands in `data/raw/<model>/` (gitignored). Trained artifacts (model + metrics + model card + datasheet) land in `ml-pipelines/<model>/artifacts/`.
 
 Each pipeline has a smoke test at `tests/test_smoke.py` that exercises the full pipeline on synthetic data in under 2 seconds and runs in CI on every PR.

@@ -82,6 +82,7 @@ testpaths = [
   "ml-pipelines/_shared/tests",
   "ml-pipelines/credit/tests",
   "ml-pipelines/readmission/tests",
+  "ml-pipelines/toxicity/tests",
   "services",
   "tests",
 ]

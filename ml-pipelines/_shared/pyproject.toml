@@ -15,6 +15,17 @@ dependencies = [
   "pyarrow>=18.0.0",
 ]
 
+[project.optional-dependencies]
+# Heavy NLP stack for the toxicity pipeline (Phase 1c). Optional so the credit
+# and readmission pipelines stay light in CI; install with:
+#   uv sync --all-packages --extra nlp
+nlp = [
+  "torch>=2.5.0",
+  "transformers>=4.46.0",
+  "datasets>=3.0.0",
+  "accelerate>=1.0.0",
+]
+
 [tool.uv.sources]
 aegis-shared = { workspace = true }
 
