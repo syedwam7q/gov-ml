@@ -1,0 +1,102 @@
+/* Editorial Dark global styles — reads tokens from @aegis/ui. */
+
+@import "@aegis/ui/styles/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* True-black-page baseline; all components compose on top of this. */
+  html,
+  body {
+    background: var(--aegis-surface-0);
+    color: var(--aegis-fg-primary);
+    font-family: var(--aegis-font-sans);
+    font-size: var(--aegis-fz-base);
+    line-height: var(--aegis-lh-normal);
+    letter-spacing: var(--aegis-tracking-normal);
+    font-feature-settings: "ss01", "cv11"; /* Inter character variants */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Headings inherit Inter; technical labels get JetBrains Mono via .aegis-mono. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--aegis-font-sans);
+    font-weight: 600;
+    letter-spacing: var(--aegis-tracking-tight);
+    line-height: var(--aegis-lh-snug);
+  }
+
+  /* Editorial serif used only on landing pull-quotes and paper-style content. */
+  .aegis-editorial {
+    font-family: var(--aegis-font-serif);
+  }
+
+  /* Technical labels — timestamps, hashes, IDs, severities, signal codes.
+     The defining marker of Aegis. */
+  .aegis-mono {
+    font-family: var(--aegis-font-mono);
+    letter-spacing: var(--aegis-tracking-wide);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .aegis-mono-label {
+    font-family: var(--aegis-font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--aegis-tracking-mono);
+    color: var(--aegis-fg-tertiary);
+    font-size: var(--aegis-fz-xs);
+  }
+
+  /* Selection: subtle accent tint instead of OS default. */
+  ::selection {
+    background: var(--aegis-accent-soft);
+    color: var(--aegis-fg-primary);
+  }
+
+  /* Focus ring — single source for all interactive elements. */
+  :focus-visible {
+    outline: 2px solid var(--aegis-accent);
+    outline-offset: 2px;
+    border-radius: var(--aegis-radius-control);
+  }
+
+  /* Scrollbar in keeping with Editorial Dark. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--aegis-stroke-strong) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--aegis-stroke-strong);
+    border-radius: var(--aegis-radius-pill);
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer components {
+  /* The hairline rule used everywhere — between sections, under headers. */
+  .aegis-hairline {
+    border-top: 1px solid var(--aegis-stroke);
+  }
+
+  /* The card surface. */
+  .aegis-card {
+    background: var(--aegis-surface-1);
+    border: 1px solid var(--aegis-stroke);
+    border-radius: var(--aegis-radius-card);
+  }
+}

@@ -1,0 +1,117 @@
+/**
+ * Aegis design tokens — the single source of truth for every color, surface,
+ * font, and motion timing in the dashboard and landing page.
+ *
+ * Spec reference: docs/superpowers/specs/2026-04-28-aegis-design.md §10.3.
+ *
+ * Editorial Dark is the only theme. We expose tokens as CSS custom
+ * properties so Tailwind's `--var()` consumers + raw inline styles + ECharts
+ * (which reads `getComputedStyle(...).getPropertyValue(...)`) all read the
+ * same values. NEVER hardcode a hex anywhere else in the codebase.
+ */
+
+:root,
+[data-theme="dark"] {
+  /* ──────────────── Surface stack ──────────────── */
+  --aegis-surface-0: #0a0a0c; /* page background */
+  --aegis-surface-1: rgba(255, 255, 255, 0.02); /* cards, panels */
+  --aegis-surface-2: rgba(255, 255, 255, 0.04); /* nested elevation */
+  --aegis-surface-3: rgba(255, 255, 255, 0.06); /* drawers, modals, popovers */
+
+  /* ──────────────── Strokes ──────────────── */
+  --aegis-stroke: rgba(255, 255, 255, 0.08); /* every border on every panel */
+  --aegis-stroke-strong: rgba(255, 255, 255, 0.16); /* focus rings, dividers */
+
+  /* ──────────────── Foreground ──────────────── */
+  --aegis-fg-primary: #e8e8ec;
+  --aegis-fg-secondary: #a1a1a8;
+  --aegis-fg-tertiary: #66666d;
+  --aegis-fg-disabled: #404046;
+
+  /* ──────────────── Accent ──────────────── */
+  /* Soft cyan-blue. Used SPARINGLY — CTAs, active state, focus rings only. */
+  --aegis-accent: #7fb4ff;
+  --aegis-accent-soft: rgba(127, 180, 255, 0.12);
+  --aegis-accent-strong: #5e9eff;
+
+  /* ──────────────── Severity ──────────────── */
+  /* Used only on incident-severity contexts. Never as decoration. */
+  --aegis-severity-low: #94a3b8;        /* slate-400  — informational */
+  --aegis-severity-medium: #fbbf24;     /* amber-400  — moderate */
+  --aegis-severity-high: #f87171;       /* red-400    — high */
+  --aegis-severity-critical: #ef4444;   /* red-500    — critical (bold + glow) */
+
+  /* Severity surface tints — for badge backgrounds. */
+  --aegis-severity-low-soft: rgba(148, 163, 184, 0.12);
+  --aegis-severity-medium-soft: rgba(251, 191, 36, 0.14);
+  --aegis-severity-high-soft: rgba(248, 113, 113, 0.16);
+  --aegis-severity-critical-soft: rgba(239, 68, 68, 0.18);
+
+  /* ──────────────── Status ──────────────── */
+  /* For "evaluated", "auto-approved", post-action recovered. */
+  --aegis-status-ok: #34d399;       /* emerald-400 */
+  --aegis-status-ok-soft: rgba(52, 211, 153, 0.12);
+  --aegis-status-warning: #fbbf24;
+  --aegis-status-error: #f87171;
+  --aegis-status-info: #7fb4ff;
+
+  /* Sparkline gradient stops. */
+  --aegis-spark-from: #7fb4ff;
+  --aegis-spark-to: #a78bfa;
+
+  /* ──────────────── Typography ──────────────── */
+  /* The actual font assignments are in `app/layout.tsx` via `next/font`. */
+  --aegis-font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --aegis-font-mono: var(--font-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  --aegis-font-serif: var(--font-serif), "Source Serif 4", Charter, Georgia, serif;
+
+  --aegis-fz-xs: 0.6875rem; /* 11px — JetBrains Mono small */
+  --aegis-fz-sm: 0.8125rem; /* 13px — UI body small */
+  --aegis-fz-base: 0.9375rem; /* 15px — UI body */
+  --aegis-fz-md: 1rem; /* 16px — section labels */
+  --aegis-fz-lg: 1.25rem; /* 20px — h3 */
+  --aegis-fz-xl: 1.5rem; /* 24px — h2 / KPI numbers */
+  --aegis-fz-2xl: 2rem; /* 32px — h1 / hero */
+  --aegis-fz-3xl: 2.75rem; /* 44px — display */
+  --aegis-fz-4xl: 4rem; /* 64px — landing-page hero */
+
+  --aegis-lh-tight: 1.15;
+  --aegis-lh-snug: 1.35;
+  --aegis-lh-normal: 1.5;
+  --aegis-lh-relaxed: 1.65;
+
+  --aegis-tracking-tight: -0.02em;
+  --aegis-tracking-normal: 0;
+  --aegis-tracking-wide: 0.05em;
+  --aegis-tracking-mono: 0.18em; /* small-caps technical labels */
+
+  /* ──────────────── Geometry ──────────────── */
+  --aegis-radius-pill: 999px;
+  --aegis-radius-card: 8px;
+  --aegis-radius-control: 6px;
+  --aegis-radius-pill-sm: 4px; /* severity pills */
+
+  /* Depth is via stroke + surface alpha — NEVER box-shadows on the dashboard.
+     The one exception is the CRITICAL severity glow, which is also subtle. */
+  --aegis-glow-critical: 0 0 12px rgba(239, 68, 68, 0.5);
+
+  /* ──────────────── Motion ──────────────── */
+  --aegis-motion-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  --aegis-motion-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --aegis-motion-slow: 360ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ──────────────── Layout ──────────────── */
+  --aegis-nav-height: 56px;
+  --aegis-rail-width: 220px;
+  --aegis-content-max: 1440px;
+  --aegis-gutter: 18px;
+}
+
+/* Print + reduced-motion respect. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --aegis-motion-fast: 0ms;
+    --aegis-motion-base: 0ms;
+    --aegis-motion-slow: 0ms;
+  }
+}

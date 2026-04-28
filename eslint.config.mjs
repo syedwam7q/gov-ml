@@ -10,7 +10,13 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ["vercel.ts", "eslint.config.mjs", "*.mjs"],
+          allowDefaultProject: [
+            "vercel.ts",
+            "eslint.config.mjs",
+            "*.mjs",
+            "apps/*/*.mjs",
+            "packages/*/*.mjs",
+          ],
         },
         tsconfigRootDir: import.meta.dirname,
       },
