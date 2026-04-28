@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     causal_attrib_url: str = Field(default="http://localhost:8003", alias="CAUSAL_ATTRIB_URL")
     """Base URL for services/causal-attrib (Phase 6 wire)."""
 
+    action_selector_url: str = Field(default="http://localhost:8004", alias="ACTION_SELECTOR_URL")
+    """Base URL for services/action-selector (Phase 7 wire)."""
+
     @property
     def database_url_sync(self) -> str:
         """Sync variant for Alembic offline mode."""

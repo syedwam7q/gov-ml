@@ -177,6 +177,67 @@ async def _maybe_call_causal_attrib(row: GovernanceDecisionRow) -> None:
         )
 
 
+async def _maybe_call_action_selector(row: GovernanceDecisionRow) -> None:
+    """Phase 7 plan-state hook.
+
+    Builds a 4-dim context from the decision's drift signal + severity,
+    reads the Phase 6 `recommended_action` as the Bayesian prior, and
+    calls /select. The response lands in `row.plan_evidence`.
+
+    Best-effort — failures leave the row's plan_evidence untouched and
+    operator-driven planning can fill it in later.
+    """
+    import logging  # noqa: PLC0415
+
+    import httpx  # noqa: PLC0415
+
+    from aegis_control_plane.config import get_settings  # noqa: PLC0415
+
+    drift: dict[str, Any] = row.drift_signal or {}
+    attribution: dict[str, Any] = row.causal_attribution or {}
+
+    # Build a 4-dim context from drift signature.
+    severity_to_float: dict[str, float] = {
+        "LOW": 0.25,
+        "MEDIUM": 0.50,
+        "HIGH": 0.75,
+        "CRITICAL": 1.0,
+    }
+    raw_value = drift.get("value")
+    raw_baseline = drift.get("baseline")
+    raw_psi = drift.get("psi")
+    context = [
+        severity_to_float.get(row.severity, 0.5),
+        float(raw_value) if isinstance(raw_value, (int, float)) else 0.5,
+        float(raw_baseline) if isinstance(raw_baseline, (int, float)) else 0.5,
+        float(raw_psi) if isinstance(raw_psi, (int, float)) else 0.0,
+    ]
+    recommended = attribution.get("recommended_action")
+    recommended_str = recommended if isinstance(recommended, str) else None
+
+    settings = get_settings()
+    select_url = f"{settings.action_selector_url.rstrip('/')}/select"
+    body: dict[str, Any] = {
+        "model_id": row.model_id,
+        "decision_id": str(row.id),
+        "context": context,
+        "constraints": [5.0, 1.0, 100.0, 1.0],
+        "horizon_remaining": 100,
+    }
+    if recommended_str is not None:
+        body["recommended_action"] = recommended_str
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(select_url, json=body)
+            resp.raise_for_status()
+            row.plan_evidence = resp.json()
+    except (httpx.HTTPError, httpx.RequestError):
+        logging.getLogger(__name__).warning(
+            "action-selector unavailable; plan-state proceeds without plan_evidence"
+        )
+
+
 @router.post("/{decision_id}/transition", response_model=GovernanceDecision)
 async def transition_decision(
     decision_id: str, payload: DecisionTransition, session: SessionDep
@@ -207,6 +268,14 @@ async def transition_decision(
         elif target == DecisionState.EVALUATED:
             # Reward vectors are floats — coerce dict[str, object] to dict[str, float]
             row.reward_vector = {k: float(v) for k, v in payload.payload.items()}  # type: ignore[arg-type]
+
+    # Phase 7 — auto-action-selection via services/action-selector.
+    # Fires when state advances to PLANNED *and* the caller didn't
+    # supply an explicit payload. Reads recommended_action from the
+    # Phase 6 causal_attribution and feeds it as a Bayesian prior
+    # to the bandit.
+    if target == DecisionState.PLANNED and payload.payload is None:
+        await _maybe_call_action_selector(row)
 
     # Phase 6 — auto-attribution via services/causal-attrib.
     # Fires when state advances to ANALYZED *and* the caller didn't

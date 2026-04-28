@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from aegis_action_selector import __version__
 from aegis_action_selector.routers import health as health_router
+from aegis_action_selector.routers import select as select_router
 
 
 def build_app() -> FastAPI:
@@ -19,6 +20,7 @@ def build_app() -> FastAPI:
         ),
     )
     app.include_router(health_router.router)
+    app.include_router(select_router.router)
     return app
 
 
