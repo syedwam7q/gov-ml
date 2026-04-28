@@ -1,0 +1,215 @@
+"use client";
+
+/**
+ * `useChatStream` — a typed consumer for the assistant's SSE endpoint.
+ *
+ * Posts the conversation to `/api/assistant/chat/stream` and reads the
+ * Server-Sent Events back token-by-token (ish — the loop yields one
+ * frame per scene: tool_call_start, tool_call_end, final_text, ...).
+ *
+ * Spec §11.3 — the dashboard's full-screen `/chat` page and the Cmd+K
+ * drawer both depend on this hook; the surface that owns it controls
+ * the scope (`{}` for /chat, `{ decision_id }` for the scoped drawer).
+ */
+
+import { useCallback, useState } from "react";
+
+import type { ChatTurn, ToolCall } from "./types";
+
+type StreamFrame =
+  | {
+      readonly kind: "tool_call_start";
+      readonly tool_name: string;
+      readonly tool_args: Record<string, unknown>;
+    }
+  | {
+      readonly kind: "tool_call_end";
+      readonly tool_name: string;
+      readonly tool_args: Record<string, unknown>;
+      readonly tool_result_summary: string | null;
+      readonly tool_result_payload: unknown;
+      readonly tool_error: string | null;
+    }
+  | { readonly kind: "final_text"; readonly text: string }
+  | { readonly kind: "iteration_cap_hit" }
+  | { readonly kind: "error"; readonly text: string };
+
+export type ChatStatus = "idle" | "streaming" | "error" | "unavailable";
+
+export interface ChatStreamHook {
+  readonly turns: readonly ChatTurn[];
+  readonly status: ChatStatus;
+  readonly send: (userText: string, scope?: Record<string, unknown>) => Promise<void>;
+  readonly reset: () => void;
+}
+
+function parseFrames(buffer: string): {
+  readonly frames: readonly StreamFrame[];
+  readonly tail: string;
+} {
+  const out: StreamFrame[] = [];
+  const events = buffer.split("\n\n");
+  const tail = events.pop() ?? "";
+  for (const ev of events) {
+    const dataLine = ev.split("\n").find((l) => l.startsWith("data: "));
+    if (!dataLine) continue;
+    try {
+      out.push(JSON.parse(dataLine.slice(6)) as StreamFrame);
+    } catch {
+      // malformed frame — drop
+    }
+  }
+  return { frames: out, tail };
+}
+
+export function useChatStream(): ChatStreamHook {
+  const [turns, setTurns] = useState<readonly ChatTurn[]>([]);
+  const [status, setStatus] = useState<ChatStatus>("idle");
+
+  const reset = useCallback((): void => {
+    setTurns([]);
+    setStatus("idle");
+  }, []);
+
+  const send = useCallback(
+    async (userText: string, scope: Record<string, unknown> = {}): Promise<void> => {
+      const trimmed = userText.trim();
+      if (!trimmed) return;
+      const userTurn: ChatTurn = { role: "user", content: trimmed };
+      // Snapshot of the prior conversation. We send `prior + userTurn` to
+      // the backend (system prompt is added server-side from `scope`).
+      let prior: readonly ChatTurn[] = [];
+      setTurns((prev) => {
+        prior = prev;
+        return [...prev, userTurn, { role: "assistant", content: "" }];
+      });
+      setStatus("streaming");
+
+      const collectedToolCalls: ToolCall[] = [];
+      let res: Response;
+      try {
+        res = await fetch("/api/assistant/chat/stream", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [...prior, userTurn].map((t) => ({
+              role: t.role,
+              content: t.content,
+            })),
+            scope,
+          }),
+        });
+      } catch {
+        setStatus("error");
+        setTurns((prev) =>
+          replaceLastAssistant(prev, {
+            role: "assistant",
+            content: "Could not reach the assistant. Is the service running?",
+          }),
+        );
+        return;
+      }
+
+      if (res.status === 503) {
+        setStatus("unavailable");
+        setTurns((prev) =>
+          replaceLastAssistant(prev, {
+            role: "assistant",
+            content:
+              "Governance Assistant is unavailable — set GROQ_API_KEY in the assistant service environment, then retry.",
+          }),
+        );
+        return;
+      }
+      if (!res.ok || !res.body) {
+        setStatus("error");
+        setTurns((prev) =>
+          replaceLastAssistant(prev, {
+            role: "assistant",
+            content: `Assistant returned ${res.status} ${res.statusText}.`,
+          }),
+        );
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let assistantText = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const { frames, tail } = parseFrames(buf);
+        buf = tail;
+        for (const frame of frames) {
+          if (frame.kind === "tool_call_end") {
+            const tc: ToolCall = {
+              name: frame.tool_name,
+              arguments: frame.tool_args,
+              result_summary: frame.tool_result_summary ?? "",
+              ...(frame.tool_result_payload != null
+                ? { result_payload: frame.tool_result_payload }
+                : {}),
+              ...(frame.tool_error != null ? { error: frame.tool_error } : {}),
+            };
+            collectedToolCalls.push(tc);
+            setTurns((prev) =>
+              replaceLastAssistant(prev, {
+                role: "assistant",
+                content: assistantText,
+                tool_calls: [...collectedToolCalls],
+              }),
+            );
+          } else if (frame.kind === "final_text") {
+            assistantText = frame.text;
+            setTurns((prev) =>
+              replaceLastAssistant(prev, {
+                role: "assistant",
+                content: assistantText,
+                tool_calls: [...collectedToolCalls],
+              }),
+            );
+          } else if (frame.kind === "iteration_cap_hit") {
+            assistantText =
+              assistantText ||
+              "Reached the tool-call iteration cap before producing a final answer.";
+            setTurns((prev) =>
+              replaceLastAssistant(prev, {
+                role: "assistant",
+                content: assistantText,
+                tool_calls: [...collectedToolCalls],
+              }),
+            );
+          } else if (frame.kind === "error") {
+            assistantText = frame.text;
+            setTurns((prev) =>
+              replaceLastAssistant(prev, {
+                role: "assistant",
+                content: assistantText,
+                tool_calls: [...collectedToolCalls],
+              }),
+            );
+            setStatus("error");
+            return;
+          }
+          // tool_call_start frames are intentionally not surfaced as
+          // separate turn entries — the dashboard renders the tool
+          // chip when the tool_call_end frame lands. A future iteration
+          // could show a "running…" spinner between start and end.
+        }
+      }
+      setStatus("idle");
+    },
+    [],
+  );
+
+  return { turns, status, send, reset };
+}
+
+function replaceLastAssistant(prev: readonly ChatTurn[], next: ChatTurn): readonly ChatTurn[] {
+  if (prev.length === 0) return [next];
+  const last = prev[prev.length - 1];
+  if (last?.role !== "assistant") return [...prev, next];
+  return [...prev.slice(0, -1), next];
+}
