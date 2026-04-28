@@ -14,6 +14,9 @@ importers:
       '@types/node':
         specifier: ^22.19.17
         version: 22.19.17
+      '@vercel/config':
+        specifier: ^0.2.1
+        version: 0.2.1
       eslint:
         specifier: ^9.39.4
         version: 9.39.4
@@ -665,6 +668,13 @@ packages:
     resolution: {integrity: sha512-LdDNl6C5iJExcM0Yh0PwAIBb9PrSiCsWamF/JyEZawm3kFDnRoaq3LGE4bpyRao/fWeGKKyw7icx0YxrLFC5Cg==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
+  '@vercel/config@0.2.1':
+    resolution: {integrity: sha512-MWLB1WjVqj2z7oMBzhQez+uMr1JjK3Gq50tZ1EgcJpOua1Dyt2ITLNjh+nNyO0Z8VXdurszFeXvaDnswJRgSgQ==}
+    hasBin: true
+
+  '@vercel/routing-utils@6.1.1':
+    resolution: {integrity: sha512-kUJn6CRuLvua5xvDZTJu1rC8GLdniC8D5VIzoJKm0dUdcUxv3LEx+pi8dokxWS+YM7cIs1Z3Y8ms/BDW1iBzzA==}
+
   '@vitest/expect@2.1.9':
     resolution: {integrity: sha512-UJCIkTBenHeKT1TTlKMJWy1laZewsRIzYighyYiJKZreqtdxSos/S1t+ktRMQWu2CKqaarrkeszJx1cgC5tGZw==}
 
@@ -1082,6 +1092,12 @@ packages:
     resolution: {integrity: sha512-ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q==}
     engines: {node: '>=8'}
 
+  path-to-regexp@6.1.0:
+    resolution: {integrity: sha512-h9DqehX3zZZDCEm+xbfU0ZmwCGFCAAraPJWMXJ4+v32NjZJilVg3k1TcKsRgIb8IQ/izZSaydDc1OhJCZvs2Dw==}
+
+  path-to-regexp@6.3.0:
+    resolution: {integrity: sha512-Yhpw4T9C6hPpgPeA28us07OJeqZ5EzQTkbfwuhsUg0c237RomFoETJgmp2sa3F/41gfLE6G5cqcYwznmeEeOlQ==}
+
   pathe@1.1.2:
     resolution: {integrity: sha512-whLdWMYL2TwI08hn8/ZqAbrVemu0LNaNNJZX73O6qaIdCTfXutsLhMkjdENX0qhsQ9uIimo4/aQOmXkoon2nDQ==}
 
@@ -1108,6 +1124,10 @@ packages:
     resolution: {integrity: sha512-7igPTM53cGHMW8xWuVTydi2KO233VFiTNyF5hLJqpilHfmn8C8gPf+PS7dUT64YcXFbiMGZxS9pCSxL/Dxm/Jw==}
     engines: {node: '>=14'}
     hasBin: true
+
+  pretty-cache-header@1.0.0:
+    resolution: {integrity: sha512-xtXazslu25CdnGnUkByU1RoOjK55TqwatJkjjJLg5ZAdz2Lngko/mmaUgeET36P2GMlNwh3fdM7FWBO717pNcw==}
+    engines: {node: '>=12.13'}
 
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
@@ -1161,6 +1181,10 @@ packages:
 
   tailwind-merge@2.6.1:
     resolution: {integrity: sha512-Oo6tHdpZsGpkKG88HJ8RR1rg/RdnEkQEfMoEk2x1XRI3F1AxeU+ijRXpiVUF4UbLfcxxRGw6TbUINKYdWVsQTQ==}
+
+  timestring@6.0.0:
+    resolution: {integrity: sha512-wMctrWD2HZZLuIlchlkE2dfXJh7J2KDI9Dwl+2abPYg0mswQHfOAyQW3jJg1pY5VfttSINZuKcXoB3FGypVklA==}
+    engines: {node: '>=8'}
 
   tinybench@2.9.0:
     resolution: {integrity: sha512-0+DUvqWMValLmha6lr4kD8iAMK1HzV0/aKnCtWb9v9641TnP/MFb7Pc2bxoxQjTXAErryXVgUOfv2YqNllqGeg==}
@@ -1299,6 +1323,9 @@ packages:
   yocto-queue@0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
+
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
 snapshots:
 
@@ -1714,6 +1741,19 @@ snapshots:
     dependencies:
       '@typescript-eslint/types': 8.59.1
       eslint-visitor-keys: 5.0.1
+
+  '@vercel/config@0.2.1':
+    dependencies:
+      '@vercel/routing-utils': 6.1.1
+      pretty-cache-header: 1.0.0
+      zod: 3.25.76
+
+  '@vercel/routing-utils@6.1.1':
+    dependencies:
+      path-to-regexp: 6.1.0
+      path-to-regexp-updated: path-to-regexp@6.3.0
+    optionalDependencies:
+      ajv: 6.15.0
 
   '@vitest/expect@2.1.9':
     dependencies:
@@ -2158,6 +2198,10 @@ snapshots:
 
   path-key@3.1.1: {}
 
+  path-to-regexp@6.1.0: {}
+
+  path-to-regexp@6.3.0: {}
+
   pathe@1.1.2: {}
 
   pathval@2.0.1: {}
@@ -2175,6 +2219,10 @@ snapshots:
   prelude-ls@1.2.1: {}
 
   prettier@3.8.3: {}
+
+  pretty-cache-header@1.0.0:
+    dependencies:
+      timestring: 6.0.0
 
   punycode@2.3.1: {}
 
@@ -2236,6 +2284,8 @@ snapshots:
       has-flag: 4.0.0
 
   tailwind-merge@2.6.1: {}
+
+  timestring@6.0.0: {}
 
   tinybench@2.9.0: {}
 
@@ -2369,3 +2419,5 @@ snapshots:
   word-wrap@1.2.5: {}
 
   yocto-queue@0.1.0: {}
+
+  zod@3.25.76: {}

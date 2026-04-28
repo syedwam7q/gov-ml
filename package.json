@@ -21,6 +21,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@types/node": "^22.19.17",
+    "@vercel/config": "^0.2.1",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^9.1.2",
     "lefthook": "^1.13.6",
