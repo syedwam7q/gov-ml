@@ -1,0 +1,18 @@
+name: Audit-log chain anchor (daily)
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  anchor:
+    name: Post latest audit-log row_hash to public artifact
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Note — wired up in Phase 2 (control-plane + Postgres)
+        run: |
+          echo "Aegis audit-log chain anchor placeholder."
+          echo "Will fetch the latest row_hash from Postgres and write it to"
+          echo "an Actions artifact once the control-plane lands in Phase 2."

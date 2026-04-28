@@ -1,0 +1,19 @@
+name: Setup validator (nightly)
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  replay-setup-md:
+    name: Replay setup.md in a fresh container
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run the prerequisite-install commands from setup.md
+        run: |
+          awk '/^<!-- setup-md-validator:start -->/,/^<!-- setup-md-validator:end -->/' setup.md \
+            | grep -v "setup-md-validator" \
+            > /tmp/validator-block.sh
+          bash -euxo pipefail /tmp/validator-block.sh
